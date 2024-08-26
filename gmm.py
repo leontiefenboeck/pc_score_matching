@@ -12,6 +12,11 @@ from matplotlib.backends.backend_pdf import PdfPages
 K = 10
 algos = ["SM", "SGD"]
 
+# kmeans init 
+# vergleiche SDG, EM, SSM, SM (random seeds, lr, epochs, data)
+# github repo
+# gmm zu pc 
+
 class GMM(nn.Module):
 
     def __init__(self, x, n_components, n_features, algorithm="SGD", means_init = 0):
