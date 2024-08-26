@@ -1,0 +1,37 @@
+\chapter{Conclusions and Future Work}
+\label{cha:conclusions}
+
+In this work, we introduce a novel method that, given sparse approximations of posterior distributions (e.g., obtained by template attacks), utilizes PCs to perform exact probabilistic inference in the context of side-channel attacks.
+Moreover, if the posterior distributions happen to be on the scope of individual bits (as in some attacks in the literature, see \cite{bit_posterior1, bit_posterior2}), we show that exact inference is even tractable \emph{without} approximations of the posterior distributions. 
+
+%...
+
+While our results demonstrate significant improvements over state-of-the-art methods, many fruitful research directions remain, including: 
+
+% Use the *joint* as much as possible 
+\textbf{Inference in the joint key distribution.} Based on our results, we additionally conclude that it is beneficial for attack performance to avoid the approximation of the full joint key posterior with a product of byte marginals. Since this is sometimes computationally infeasible, investigating other simplifications of the joint distribution (e.g. by means of sparsification or less strict conditional independence assumptions) is a promising future research direction.  
+
+% 2 main challenges: SDD Compilation and circuit multiplication
+\textbf{CNF Representation.} 
+% non-CNF compilation (ANF?)
+A key challenge of this work is to compile the algorithmic description of a cryptographic routine into a succinct SDD representation. To do so, we first construct a boolean representation in Conjunctive Normal Form (CNF) and use existing SDD compilation techniques that consume this CNF. However, we claim that CNFs are an inherently \emph{unnatural} intermediate representation of the algorithm: (1) Although the goal is a hierarchical circuit representation, CNFs are \emph{flat} descriptions that do not leverage any kind of decision hierarchy, and (2) even simple cryptographic algorithms can sometimes only be represented using large CNFs, especially since \textsc{xor} operations suffer from an exponential blowup in the number of clauses if they are embedded in CNF \cite{asca}. The latter problem is well-known and has been addressed in other fields: For example, \emph{MiniSAT} \cite{minisat}, a popular SAT solver, was extended to explicitly handle \textsc{xor} operations more efficiently (\emph{CryptoMiniSAT} \cite{cryptominisat}). 
+Future work may thus consider other normal forms, such as \emph{Algebraic Normal Form} (ANF), which are more suitable for cryptographic algorithms and may investigate building dedicated SDD compilers for these languages.
+
+% holistic SDD compilation (compiler is oblivious to PSDD multiply)
+
+\textbf{Holistic SDD Compilation.} 
+A second, orthogonal issue is the fact that the SDD compiler is oblivious to the downstream circuit multiplication tasks: The compiler performs a search through the space of vtrees to heuristically optimize the size of the resulting SDD \cite{dynamic_min_choi}. Future work may extend the compiler to optimize a \emph{multi-goal} objective, i.e., to search for vtrees that both (1) induce a compact SDD representation, and (2) are suitable for the sequence of circuit multiplications (as discussed in Section \ref{sec:sdd_comp_discussion}).
+
+% (?) representation of posterior dists (byte dist don't align well with compiled algorithm)
+\textbf{Sparsity-aware Vtree Search.} Before compiling the SDD, we already possess knowledge about \emph{which} posterior distributions we wish to sparsify. Hence, the vtree search procedure can incorporate this information and prioritize vtrees where bits that occur in sparse distributions are close to the root of the vtree: From a top-down perspective, this encourages the induced SDD to quickly make decisions based on the bits for which only few possible assignments exist. Multiplying the circuits that represent the sparse distributions will thus prune large parts of the compiled circuit.
+
+% Future Work
+\textbf{Order of PSDD Multiplication} Future work may also systematically investigate the influence of the \emph{order} in the circuit multiplication sequence on the runtime of the attack: In this work, we conduct our experiments by multiplying circuits in the natural order induced by the vector $\vv$ (except for sparse distributions, which we always multiply first). We also experiment with different orders, such as the one presented in \cite{tractable_ops}, and find slight differences in runtime. 
+
+\textbf{Neuro-Symbolic Learning} Our experiments do not fully explore the flexibility of DLSCA to train networks that are both (1) expressive and (2) amenable to exact inference by learning to parameterize a (compatible) single PC that is subsequently multiplied with the constraint circuit $\pc(\mathcal{M}_B(\vv))$, as shown in \cite{spl}. Future work may study architectures to trade off learning difficulty and expressivity of the parameterized circuit, all while producing a compatible circuit.
+
+% top-k circuit multiplication
+    % + multiply 2 circuits s.t. only top k assignments in the product remain 
+
+% sparsify PCs -> argmax over circuit multiplication
+    % + 
