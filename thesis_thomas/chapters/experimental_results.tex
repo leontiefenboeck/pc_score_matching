@@ -1,0 +1,189 @@
+\chapter{Experimental Results}
+\label{cha:experimental_results}
+
+\section{Dataset}
+To evaluate our method, we use a dataset of asynchronously captured power traces from an SMT32F415 (ARM) microcontroller \cite{dlsca_defcon} running \textit{tinyAES} \cite{tinyaes}. The dataset $\dat = \{(\leak^{(i)}, \kk^{(i)}, \pp^{(i)})\}_{i=1}^n$ contains $n = 131,072$ items, each of which consists of a high-dimensional power trace $\leak \in \mathbb{R}^{50000}$, and 128-bit (16 byte) key and plaintext vectors $\kk, \pp \in \mathbb{F}_2^{128}$. A leakage $\ll$ contains the power consumption of the device during all $10$ rounds of AES. However, since we only attack the first round\footnote{To be precise, we attack exactly the operations shown in Algorithm \ref{alg:aes}.} of AES, we only use the first $20,000$ values in each $\leak$ in all experiments (i.e., $\leak \in \mathbb{R}^{20000}$). Other than that, we do not perform additional pre-processing steps.
+In $\dat$, we have $512$ unique keys $\kk$. For each unique key, the dataset contains $256$ elements, each with a different plaintext $\pp$. During the attack phase, we assume the plaintext to be known (\textit{known plaintext attack}).
+
+We use $20\%$ of $\dat$ as a test set $\dattest$, while the remaining $80\%$ of $\dat$ are again split into a training set $\dattrain$ ($82.5\%$ of $\dat \setminus \dattest$) and a validation set $\datval$ ($17.5\%$ of $\dat \setminus \dattest$).
+The set of unique keys in $\dattrain, \dattest, \datval$ are non-overlapping, i.e., when validating and testing a side channel attack, it must reason about keys $\kk$ it has never seen during profiling/training.
+
+\section{Deep Learning SCA}
+Consider again the problem of estimating $p(v | \leak)$ for some variable $v$. As described in Section \ref{sec:ta}, template attacks learn a \emph{generative} model $p(\leak | v)$ and use Bayes' law to recover $p(v | \leak)$. In the field of machine learning, \emph{discriminative models} that directly estimate $p(v | \leak)$ have shown to outperform generative models on several tasks \cite{gen_vs_disc, crf}. Therefore, we also experiment with using \emph{Deep Neural Networks} which are trained to directly predict the distribution\footnote{In general, as discussed in Section \ref{sec:ta}, we can predict $p(f(v) | \leak)$ where $f$ can be chosen from a variety of plausible leakage models. In our experiments, we again only consider the identity function $f(x) = x$ for simplicity.} $p(v | \leak)$. \emph{Deep Learning based Side-Channel Attacks} (DLSCAs) are not novel and have been extensively studied in the literature and have shown promising results in many applications \cite{dlsca_ascad, breaking_free, dlsca_in_practice, dlsca_aes, dlsca_defcon}. However, when using a standard \emph{Convolutional Neural Network} (CNN) architecture, we find that in our experiments (detailed in Chapter \ref{sec:neuro_symb}), the performance of a DLSCA is subpar compared to the template attack pipeline that is described next. Nevertheless, DLSCAs provide particularly interesting flexibilities when performing exact inferences with PCs, which are discussed in the Appendix (Section \ref{cha:dlsca}).
+
+
+\section{Template Attack}
+\label{sec:ta_application}
+% describe how p(v_j | \leak) is produced (POI, LDA, Gaussian Template)
+% reference background for details, just describe on high level (w/ hypereparams)
+For a given leakage $\leak$, we utilize the exact setup described in \cite{5min} to obtain a set of posterior distributions $p(v_j \mid \leak)$ for all intermediate variables $v_j \in \vv$. Specifically, during profiling, we use $\dattrain$ to compute $u \in \mathbb{N}$ points of interest for each $v_j \in \vv$, as described in \cite{5min}. Let $\leak'_v \in \mathbb{R}^{u}$ denote the vector that contains the points of interest of intermediate variable $v \in \vv$, extracted from leakage $\leak$.
+
+Next, we use \emph{Linear Discriminant Analysis} (LDA) to reduce the dimensionality of a given $\leak'_v$ \cite{lda}. Simply speaking, we find a particular linear projection $\mathbf{A} \in \mathbb{R}^{r \times u}$ into an $r$-dimensional subspace with $r \ll u$. We denote each projected result as $\mathbf{l}_v = \mathbf{A} \leak'_v$. In our experiments, we choose $u=512$ and $r=8$.
+
+Finally, as discussed in Section \ref{sec:ta}, we build \emph{Guassian Templates} by estimating parameters for $p(\mathbf{l} \mid v)$ for each value $v$ can assume, i.e., $256$ distributions for each intermediate value in our experiments. We can then use Bayes' rule to infer $p(v \mid \mathbf{l})$, while assuming that
+\begin{align}
+p(v \mid \mathbf{l}) \approx p(v \mid \leak)
+\end{align}
+In subsequent sections, we will slightly abuse notation for consistency and will write $p(v \mid \leak)$ to represent $p(v \mid \mathbf{l})$, unless explicitly stated otherwise.
+
+\section{Evaluation}
+\label{sec:eval}
+Recall that, since we attack AES-128, there exists a true $16$-byte key, denoted $\kk^* = (k^*_1,\dots,k^*_{16})^T$, for each leakage $\leak$.
+Unless stated otherwise, our evaluation uses the exact factor graph presented in Figure \ref{fig:aes_acyclic_fg} to obtain marginal posterior distributions $p(k^*_1 \mid \leak),\dots,p(k^*_4 \mid \leak)$, given the distributions $p(v_1 \mid \leak), \dots, p(v_n \mid \leak)$ that we obtain using a template attack.
+As we only attack the first round of AES, we could \emph{independently} attack all $4$ invocations of \textsc{MixColumn} and reason about the corresponding $4$-byte subkeys independently. However, we only attack the first $4$ key bytes (which are involved in a single \textsc{MixColumn} computation) and extrapolate the result to a full $16$-byte key by assuming that the other $3$ invocations of \textsc{MixColumn} are equally difficult to attack.
+
+% How do we evaluate -> rank calculation
+\begin{definition}[Rank]
+    Given a probability mass function $p(\xx)$ over variables $\xx \in \mathcal{X}$, and a particular assignment $\xx' \in \mathcal{X}$, we define the \emph{rank} of $\xx'$ under $p$ as
+    \begin{align}
+        \rank(\xx') = |\{ \xx \in \mathcal{X} \mid p(\xx) > p(\xx') \}|
+    \end{align}
+    Note that $0 \leq \rank(\xx') \leq |\mathcal{X}| - 1$. If the underlying probability measure is unambiguous, we will just write \emph{rank of} $\xx'$.
+\end{definition}
+
+% We attack single MixCol -> how do we extrapolate to 4 MixCols
+In our evaluation of an attack, we assume that the attacker has a fixed compute budget that they use to enumerate key hypotheses. Let $\kk_{i:j} = (k_i, k_{i+1}, \dots, k_j)^T$ (with $i > j$) be a subkey consisting of $j - i + 1$ bytes.
+Recall that, as in many attacks, we assume 
+    \begin{align}
+        p(\kk_{1:4} \mid \leak) = p(k_1 \mid \leak) \cdots p(k_4 \mid \leak)
+    \end{align}
+Therefore, it is straightforward to enumerate the $N$ distinct subkeys $\kk_{1:4}$ with the highest proability in the joint $p(\kk_{1:4} | \leak)$ (for sufficiently small $N$). In our evaluation, we assume that the other distribution over $4$-byte subkeys $p(\kk_{5:8} | \leak), p(\kk_{9:12} | \leak), p(\kk_{13:16} | \leak)$ are \emph{identical} to $p(\kk_{1:4} | \leak)$, i.e., for each $4$-byte input, they all output the same probability.
+For a particular leakage $\leak$, assume that the true subkey $\kk^*_{1:4} = (k^*_1,\dots,k^*_4)^T$ has $\rank(\kk^*_{1:4}) < N$. Then, there exists a strategy that takes at most $N^4$ key hypotheses to obtain the true key $\kk^*$, namely enumerating the $N$ most likely $4$-byte subkeys for each distribution $\{ p(\kk_{i:i+3} \mid \leak) \}_{i \in \{1,5,9,13\}}$, and trying all $N^4$ combinations\footnote{Note that this is \emph{not equivalent} to enumerating the top $N^4$ assignments in the product $\prod_{i \in \{1,5,9,13\}} p(\kk_{i:i+3} \mid \leak)$.}.
+
+% define 'success rate'
+\begin{definition}[Success Rate]
+    Given a single leakage $\leak$ (\emph{single-trace attack}), and the corresponding $16$-byte key and plaintext $\kk, \pp$, we define an attack to be \emph{successful} if $\rank(\kk_{1:4}) < 2^8$ under the produced posterior distribution $p(\kk_{1:4} \mid \leak)$. Under the assumptions detailed above, this corresponds to an attack that can find the full key $\kk$ by enumerating at most $2^{32}$ key hypotheses. The \emph{success rate} is then defined as the fraction of successful attacks on a dataset $\{(\leak^{(i)}, \kk^{(i)}, \pp^{(i)})\}_{i=1}^n$.
+\end{definition}
+
+As simple enumeration is often infeasible, other works \cite{32bit, 5min} need to \emph{estimate} the rank of the true key in the resulting posterior distribution using various approaches \cite{key_enumeration, study_key_enum}. Due to our assumptions, we can directly enumerate the $N=2^8$ unique keys with the highest probability in $p(\kk_{1:4} \mid \leak)$ and check if the true key is contained in this set.
+
+\begin{definition}[Average Rank]
+    For each \emph{successful} attack, we record the actual rank of the true subkey $\rank(\kk_{1:4})$. The mean of these values is denoted as \emph{Average Rank}. Note that this metric does not include the key ranks of unsuccessful attacks.
+\end{definition}
+
+\section{Results}
+\label{sec:results}
+% # FULL FACTOR GRAPH
+% Baseline: no inference within mixcol (just take p(x) and p(y) and produce p(k))
+% SASCA w/ true inputs
+% PSDD w/ sparse inputs
+
+% explain baseline (draw reduced factor graph)
+% \subsection{Baseline}
+As a baseline, we consider the trivial inference problem where we neglect all information present in the \textsc{MixColumn} routine, i.e., we only consider the factor graph in Figure \ref{fig:baseline_fg}. Clearly, this factor graph does not contain cycles and thus, belief propagation returns the exact key marginals $p(k_1 \mid \leak),\dots,p(k_4 \mid \leak)$. 
+
+\begin{figure}[ht]
+    \centering
+    \input{figures/baseline_fg.tex}
+    \caption{Factor graph that corresponds to the reduced inference problem we use as our \emph{Baseline}.}
+    \label{fig:baseline_fg}
+\end{figure}
+
+% uniform key dist
+In all of our experiments, we do not construct templates for the key bytes, i.e., when running BP, we always start the algorithm by setting $p(k_i | \leak) = \unif(\mathbb{F}_2^8) \ \forall i \in \{1,\dots,4\}$, where $\unif(\mathcal{X})$ denotes a uniform distribution over the elements $\xx \in \mathcal{X}$. The reason for this choice is that, empirically, we find that directly estimating the distributions $\{ p(k_i | \leak) \}_{i=1}^4$ using a template attack and using them in the BP algorithm leads to significant performance degradation in all experiments (w.r.t. all metrics considered).
+
+% explain PSDD (sparse input, which ones?)
+As detailed in Chapter \ref{cha:methods}, we compile \textsc{MixColumn} into a PSDD and \emph{circuit multiply} it with PSDD representations of intermediate posteriors. However, to make this computation tractable, we leverage the sparsity of some distributions to substantially reduce the size of the compiled circuits. Therefore, we choose to sparsify all distributions of inputs $p(v | \leak), v \in \vin$ since, empirically, we observe that these distributions have low entropy:
+\begin{align}
+\label{eq:pc_message_sparse}
+    \tilde{\mu}_{\mathcal{M}_B \to x_i}(x_i) &= \sum_{\vv \setminus x_i} \pc \left( \mathcal{M}_B(\vv) \right) \cdot \prod_{v_i \in \vin} \pc\left( \tilde{p}_{\pi}(v_i | \leak) \right) \cdot \prod_{v_j \in \vv \setminus \vin} \pc\left( p(v_j | \leak) \right)
+\end{align}
+where $\tilde{p}_\pi(v_i | \leak)$ is the $\pi$-sparse approximation of $p(v_i | \leak)$, as described in Section \ref{sec:sparsification}. As an optimization, note that $\tilde{\mu}_{\mathcal{M}_B \to x_i}(x_i)$ already includes the distribution $p(x_i | \leak)$ in the multiplication sequence and thus, we omit multiplying with this distribution during BP. This decreases the size of the resulting circuit during multiplication. Apart from this, we perform vanilla BP in the factor graph shown in Figure \ref{fig:aes_acyclic_fg} and repeat the experiment with different values of $\varepsilon = 1 - \pi$. Since we use the PSDDs to perform marginalization, we denote this method as PSDD + MAR (\emph{marginalization}).
+
+With the same sparse approximations, i.e., $\tilde{p}_\pi(v | \leak), \ \forall v \in \vin$, we also use the algorithm presented in Section \ref{sec:mpe} to compute the top-$256$ most probable key assignments directly in the joint distribution, denoted as PSDD + MPE (\emph{most probable evidence}). Recall that an MPE query is a linear time operation in decomposable and deterministic PCs, which particularly motivates our choice of using PSDDs to model this inference problem.
+% explain SASCA (1 sentence)
+Finally, we compare both the baseline and the PSDD approaches with $3$ SASCAs with different numbers of loopy BP iterations (namely, $3,50$ and $100$ iterations) on the factor graph shown in Figure \ref{fig:aes_fg}. To analyze the influence of sparsifying $p(v | \leak), v \in \vin$, we also run the SASCAs with the sparse approximations (with different $\varepsilon$, where $\varepsilon = 0$ means \emph{no sparsification}). The results are depicted in Table \ref{tab:main_res} (rounded to two decimal places).
+
+\begin{table}[H]
+    \centering
+	\begin{tabular}{|l | c | c | c | c |}
+		\hline
+    \multicolumn{1}{|l|}{} & \multicolumn{4}{c|}{\textbf{Success Rate}} \\
+    \cline{2-5}
+    \multicolumn{1}{|l|}{\textbf{Inference Method}} & $\varepsilon = 10^{-2}$ & $\varepsilon = 10^{-5}$ & $\varepsilon = 10^{-8}$ & $\varepsilon = 0$\\
+		%  & \textbf{Success Rate} ($\varepsilon = 10^{-2}$) & \textbf{Average Rank} \\
+	\hline %\hline
+
+		Baseline & $79.35 \%$ & $79.57 \%$ & $79.59 \%$ & $\mathbf{79.59} \%$ \\ \hline
+		SASCA (3 BP iterations)  & $84.89 \%$ & $84.88 \%$ & $84.91 \%$ & $\mathbf{84.91} \%$ \\ \hline
+		SASCA (50 BP iterations)  & $89.36 \%$ & $90.45 \%$ & $90.41 \%$ & $\mathbf{90.45} \%$ \\ \hline
+		SASCA (100 BP iterations)  & $89.36 \%$ & $90.27 \%$ & $\mathbf{90.69} \%$ & $90.52 \%$ \\ \hline
+		PSDD + MAR  & $93.40 \%$ & $97.81 \%$ & $\mathbf{98.02} \%$ & N/A \\ \hline
+		PSDD + MPE  & $93.67 \%$ & $99.42 \%$ & $\mathbf{99.93} \%$ & N/A \\ \hline
+	\end{tabular}
+	\caption{Success rate of different inference methods, measured on the validation dataset $\datval$. $\varepsilon = 1 - \pi$ controls the level of sparsity in the approximated distributions, where $\varepsilon = 0$ means no approximation. For the Baseline and SASCA, we can tractably compute results for $\varepsilon = 0$, while this is not possible using the PSDD approaches (denoted by N/A).}
+    \label{tab:main_res}
+\end{table}
+
+After finding the best $\varepsilon$ for the PSDD approaches ($\varepsilon = 10^{-8}$), we use this value to run evaluation on our test set $\dattest$. We also report \emph{average rank} for each method and show the results in Table \ref{tab:test_res}.
+
+\begin{table}[H]
+    \centering
+	\begin{tabular}{|l | c | c|}
+		\hline
+		\textbf{Inference Method} & \textbf{Success Rate} & \textbf{Average Rank} \\
+	\hline %\hline
+		Baseline & $79.21 \%$ & $21.84$ \\ \hline
+		SASCA (3 BP iterations) & $84.65 \%$ & $16.62$ \\ \hline
+		SASCA (50 BP iterations) & $90.50 \%$ & $6.64$ \\ \hline
+		SASCA (100 BP iterations) & $90.35 \%$ & $6.17$ \\ \hline
+		PSDD + MAR ($\varepsilon=10^{-8}$) & $98.04 \%$ & $1.83$ \\ \hline
+		PSDD + MPE ($\varepsilon=10^{-8}$) & $\mathbf{99.89} \%$ & $\mathbf{0.34}$ \\ \hline
+	\end{tabular}
+	\caption{Success rate and average rank measured on the test dataset $\dattest$. All SASCAs were performed with $\varepsilon = 0$.}
+    \label{tab:test_res}
+\end{table}
+
+As seen in Table \ref{tab:test_res}, performing exact inference on approximations of the distributions substantially outperforms SASCA: Not only do we observe an increase in success rate of up to $9\%$, but also severely reduce the number of key hypotheses we need to enumerate during an attack (Average Rank). In absolute terms, we see that the PSDD + MPE approach can effectively recover almost all secret keys with a single trace.
+
+% SASCA w/ true inputs VS SASCA w/ sparse inputs
+% To analyze the influence of the sparsified input distributions on our performance metrics, we input the sparsified distributions (that were given to the PSDD approach) to \emph{all} inference methods. The result of this experiment is given in Table \ref{tab:ablate_sparsity} and shows that sparsification has either no impact on the success rate (baseline), or makes the success rate slightly worse (SASCA). We therefore conclude that the significant increase in success rate seen in Table \ref{tab:main_res} indeed stems from the fact that we perform \emph{exact} probabilistic inference.
+
+
+% # ISOLATE MIXCOL
+% Baseline: no inference (just take p(x))
+% SASCA w/ true inputs
+% PSDD w/ sparse inputs
+% SASCA w/ sparse inputs
+\subsection{Isolation of the Loopy Subgraph}
+\label{sec:exp_isolation}
+Recall that we only replace the loopy parts of the factor graph in Figure \ref{fig:aes_fg} with a PSDD factor. This allows us to perform BP on an acyclic factor graph with high-dimensional factors, which effectively shifts most of the inference burden from message passing to circuit operations. Since we leave the remaining subgraph unchanged, both the SASCA, as well as our PSDD + MAR approach partially perform BP on the same graph. To study the effect of BP on the loopy subgraph in isolation, we run experiments that are equivalent to the ones above, except for setting $p(y_i | \leak) = \unif(\mathbb{F}_2^8) \ \forall i \in \{1,\dots,4\}$. This restricts the inference methods to use only leakages in the \textsc{MixColumn} routine (except for the plaintext addition). The respective results are shown in Table \ref{tab:mixcol_res}.
+
+\begin{table}[H]
+    \centering
+	\begin{tabular}{|l | c | c | c | c |}
+		\hline
+    \multicolumn{1}{|l|}{\textbf{Inference Method}} & \multicolumn{4}{c|}{\textbf{Success Rate}} \\
+    \cline{2-5}
+    \multicolumn{1}{|l|}{\textbf{(MixColumns only)}} & $\varepsilon = 10^{-2}$ & $\varepsilon = 10^{-5}$ & $\varepsilon = 10^{-8}$ & $\varepsilon = 0$\\
+		%  & \textbf{Success Rate} ($\varepsilon = 10^{-2}$) & \textbf{Average Rank} \\
+	\hline %\hline
+
+		Baseline & $79.35 \%$ & $79.57 \%$ & $79.59 \%$ & $\mathbf{79.59} \%$ \\ \hline % ? 
+		SASCA (3 BP iterations)  & $81.28 \%$ & $82.26 \%$ & $82.30 \%$ & $\mathbf{82.30} \%$ \\ \hline % ?, only eps=0 correct 
+		SASCA (50 BP iterations)  & $86.82 \%$ & $\mathbf{88.35} \%$ & $88.10 \%$ & $88.15 \%$ \\ \hline % ?, only eps=0 correct 
+		SASCA (100 BP iterations)  & $87.19 \%$ & $88.25 \%$ & $\mathbf{88.46} \%$ & $88.32 \%$ \\ \hline % ?, eps=0
+		PSDD + MAR ($\varepsilon=10^{-8}$)  & $93.27 \%$ & $97.75 \%$ & $\mathbf{98.08} \%$ & N/A \\ \hline %true
+		PSDD + MPE ($\varepsilon=10^{-8}$)  & $93.67 \%$ & $99.42 \%$ & $\mathbf{99.93} \%$ & N/A \\ \hline %true
+	\end{tabular}
+	\caption{Success rate on $\datval$ when setting $p(y_i | \leak) = \unif(\mathbb{F}_2^8) \ \forall i \in \{1,\dots,4\}$.}
+    \label{tab:mixcol_res}
+\end{table}
+
+% \begin{table}[H]
+%     \centering
+% 	\begin{tabular}{|l | c | c|}
+% 		\hline
+% 		\textbf{Inference Method} & \textbf{Success Rate} & \textbf{Average Rank} \\
+% 	\hline %\hline
+% 		Baseline & $79.21 \%$ & $21.84$ \\ \hline
+% 		SASCA (3 BP iterations) & $82.30 \%$ & $18.46$ \\ \hline
+% 		SASCA (50 BP iterations) & $88.15 \%$ & $6.97$ \\ \hline
+% 		SASCA (100 BP iterations) & $88.32 \%$ & $6.52$ \\ \hline
+% 		PSDD ($\varepsilon=10^{-2}$) & $93.27 \%$ & $\mathbf{1.48}$ \\ \hline
+% 		PSDD ($\varepsilon=10^{-5}$) & $97.75 \%$ & $1.71$ \\ \hline
+% 		PSDD ($\varepsilon=10^{-8}$) & $\mathbf{98.08} \%$ & $1.81$ \\ \hline
+% 	\end{tabular}
+% 	\caption{Results when setting $p(y_i | \leak) = \unif(\mathbb{F}_2^8) \ \forall i \in \{1,\dots,4\}$. Compared to Table \ref{tab:main_res}, the performance increase between the PSDD method and the SASCAs becomes even larger. As expected, the general performance is worse if we neglect information about the bytes $y_1,\dots,y_4$.}
+%     \label{tab:mixcol_res}
+% \end{table}

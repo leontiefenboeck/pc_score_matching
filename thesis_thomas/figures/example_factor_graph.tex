@@ -1,0 +1,13 @@
+\begin{tikzpicture}
+    \factor[] {fa} {right:$f_a$} {} {};
+    \factor[right=1 of fa] {fb} {right:$f_b$} {} {};
+    \factor[right=1 of fb] {fc} {right:$f_c$} {} {};
+    \factor[right=1 of fc] {fd} {right:$f_d$} {} {};
+    \node[latent, above=of fa, xshift=0cm] (x1) {$x_1$} ; %
+    \node[latent, right=1.07 of x1] (x2) {$x_2$} ; %
+    \node[latent, right=1.07 of x2] (x3) {$x_3$} ; %
+    \factoredge {x1,x2} {fa} {} ; %
+    \factoredge {x1,x2} {fb} {} ; %
+    \factoredge {x2,x3} {fc} {} ; %
+    \factoredge {x3} {fd} {} ; %
+\end{tikzpicture}

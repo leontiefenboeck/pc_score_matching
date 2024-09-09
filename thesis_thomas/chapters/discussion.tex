@@ -1,0 +1,90 @@
+\chapter{Discussion}
+\label{cha:discussion}
+
+\section{Interpretation of Experimental Results}
+% PSDD+MPE > PSDD+MAR > SASCA > Baseline
+The measurements we conduct using the validation dataset (Table \ref{tab:main_res}) and the test dataset (Table \ref{tab:test_res}) both show that the PSDD approaches that perform \emph{exact} inference on an approximation of the inference problem ($\varepsilon > 0$) significantly and systematically outperform both SASCA and the baseline in terms of success rate and average rank.
+By also running SASCA and the baseline using the sparsified distributions, we isolate the influence of \emph{approximate inference} and observe that, usually, the performance of all methods becomes worse as we increase $\varepsilon$. In other words, loopy BP does not benefit from sparse approximations of the distribution factors in our experiments.
+Thus, we conclude that it is indeed the fact that we perform exact inference that is responsible for the increase in performance.
+
+% exact inference helps, even if applied to an approximation of the problem
+% as expected: more BP iterations are advantageous, so is better approximation (smaller eps)
+When performing a SASCA, we tune the number of loopy BP iterations using $\datval$ and find that a larger number of iterations is generally advantageous in terms of success rate. However, as discussed in Section \ref{sec:runtime}, this clearly increases the computational cost of the attack. Moreover, an effect of \emph{diminishing returns} can be observed: While $50$ BP iterations yield much better results than merely $3$ iterations, $100$ iterations increase the success rate only marginally.
+
+% attack runtime in successful attacks (average)
+Recall that, by definition, every successful attack has a bounded computational cost: At most $2^{32}$ key hypotheses are required to find the true $16$-byte key if the attack was successful.\footnote{Under the assumptions detailed in Section \ref{sec:eval}.} However, our experiments show that most attacks require orders of magnitude fewer operations: Using the test set $\dattest$, successful attacks using our PSDD + MPE ($\varepsilon = 10^{-8}$) approach need, on average, $\approx 150,000$ key hypotheses to find the true $16$-byte key (i.e., brute-forcing $\approx 17.2$ bits). For comparison, these are $\approx 150$ times fewer key hypotheses than the best SASCA (100 BP iterations) on $\dattest$.
+
+% isolating mixcol
+Interestingly, when only performing inference using leakages from the \textsc{MixColumn} routine (Table \ref{tab:mixcol_res}), we observe that only the SASCAs benefit from learning the distributions $p(y_i | \leak)$. All other methods perform equally well when neglecting information about $y_i$. We also conclude that a lot of information about the key is already encoded in $p(x_i \mid \leak)$, as only using these distributions (baseline) to predict the key already yields a success rate of $79.59 \%$.
+
+% however, as discussed next, the utilized MPE method is of limited applicability in general
+% Moreoever, the PSDD approach utilzing MPE systematically outperforms the PSDD + MAR method. The former method does not 
+
+\section{Marginalization vs. MPE}
+\label{sec:mar_vs_mpe}
+% Conditional independence assumption in joint key posterior (as in ...) hurts performance: Directly answering MPE queries in the true joint is beneficial
+% Limited applicability in general: multi-trace attacks, multiple PSDD nodes in single factor graph
+Recall that in the PSDD + MAR approach, after performing many circuit multiplications, we use the resulting PSDD to compute a marginal (i.e., the BP message in \ref{eq:pc_message}). Then, we perform BP to obtain byte marginals $p(k_i \mid \leak)$. However, as we wish to enumerate entire $4$-byte keys, we assume that
+\begin{align}
+    p(k_1,\dots,k_4 \mid \leak) = \prod_{i=1}^4 p(k_i \mid \leak)
+\end{align}
+i.e., we assume that the key bytes are \emph{conditionally independent}, given $\leak$. However, as soon as $\leak$ captures information about variables that depend on more than a single key byte, this assumption is, in general, incorrect. In our use case, $\leak$ includes leakages from \textsc{MixColumn}, which mixes a transformed version of \emph{different} key bytes. 
+
+In contrast, the PSDD + MPE approach does not make this assumption, as it \emph{directly} extracts the $N$ most probable key assignments using the actual joint distribution $p(k_1,\dots,k_4 \mid \leak)$ induced by the factor graph. We conclude that, if possible, directly querying the joint distribution is beneficial for the performance of the side-channel attack.
+
+However, it is not straightforward to extend our presented MPE inference approach to more general settings: For example, in the case where we attack multiple traces, we would need to represent the instantiation of \textsc{MixColumn} as a PSDD for every trace and multiply \emph{all} of them to obtain a single PSDD. Moreover, we would need to represent all other factors (\textsc{sbox}, \textsc{xor}) as PSDDs and also circuit multiply them with the previous result --- an endeavor which is, without further assumptions, most probably computationally infeasible in practice. 
+Even in the single-trace setting, if we compile multiple parts of a factor graph into separate PSDDs, we need to circuit multiply all of them to obtain a PC that can answer our MPE query tractably, which can be computationally difficult.
+
+\section{PSDD vs. Na\"ive Loop}
+\label{sec:loop}
+% where does sparsity occur? if only inputs and outputs, loop is trivial
+To make circuit multiplication in Equation \ref{eq:pc_message} tractable, we construct $\pi$-sparse approximations of $p(v \mid \leak), \ \forall v \in \vin$, since we empirically observe that these distributions have low entropy in our particular use case.
+In fact, under this assumption, we can also use a na\"ive algorithm that generates the same output as a PSDD: Recall that a simple loop can compute
+\begin{align}
+    \mu_{\mathcal{M}_B \to x_i}(x_i) &= \sum_{\vv \in \mathcal{V}_i(x_i)} \prod_{v_j \in \vv \setminus x_i} p(v_j | \leak)
+\end{align}
+with 
+\begin{align}
+    \mathcal{V}_i(y) &= \{ \vv \mid \mathcal{M}_B(\vv) = 1 \land x_i = y \}
+\end{align}
+for all $x_i \in \{0,\dots,255\}$ in a total of $2^{32}$ loop iterations. However, if $\tilde{p}_\pi(\vin | \leak) = \prod_{v \in \vin} \tilde{p}_\pi(v | \leak)$ is sparse, we only need to consider $\vin$ that have positive probability: Let
+\begin{align}
+    \tilde{\mathcal{V}}_i(y) &= \{ \vv \mid \mathcal{M}_B(\vv) = 1 \land x_i = y \land \tilde{p}_\pi(\vin \mid \leak) > 0\}
+\end{align}
+and let $\nnz(p(x))$ denote the number of nonzeros in the probability mass function $p(x)$. 
+Then, we can compute $\mu_{\mathcal{M}_B \to x_i}(x_i)$ for all $x_i \in \{0,\dots,255\}$ using $\prod_{v \in \vin} \nnz(\tilde{p}_\pi(v | \leak))$ loop iterations by calculating
+\begin{align}
+    \mu_{\mathcal{M}_B \to x_i}(x_i) &= \sum_{\vv \in \tilde{\mathcal{V}}_i(x_i)} \prod_{v_j \in \vv \setminus x_i} p(v_j | \leak)
+\end{align}
+Note that we can easily compute $\tilde{\mathcal{V}}_i(y)$ by using an implementation of \textsc{MixColumn}: We enumerate all $\vin$ that have positive probability and run \textsc{MixColumn} to produce $\vmid, \vout$. We can also use a similar approach to reproduce the output of the PSDD + MPE method: After performing left-to-right message passing as detailed in Section \ref{sec:mpe}, we again enumerate all $\vin$ with positive probability. For each such $\vin$, we calculate the corresponding $\vmid, \vout$, and, with $\vv = (\vin, \vmid, \vout)^T$, compute
+\begin{align}
+    f(\vv) = \prod_{v_j \in \vv \setminus \vin} p(v_j | \leak) \cdot \prod_{i=1}^4 \mu_{x_i \to \mathcal{M}_B}(x_i)
+\end{align}
+Then, take the $N$ $\vv$ assignments that achieve the highest score\footnote{We break ties randomly.} $f(\vv)$ and, as described in Section \ref{sec:mpe}, compute the corresponding $N$ key hypotheses. As before, this algorithm needs $\prod_{v \in \vin} \nnz(\tilde{p}_\pi(v | \leak))$ loop iterations.
+
+Both methods also work if, instead of assuming that the distributions of $\vin$ have low entropy, we assume that the distributions of \emph{outputs} $p(v | \leak), v \in \vout$ have low entropy: We enumerate all $\vout$ with positive probability and use the \emph{inverse} $\textsc{MixColumn}^{-1}$ to derive the corresponding inputs $\vin$ and intermediates $\vmid$.
+
+However, as these methods again neglect the \emph{internal structure} of \textsc{MixColumn}, it is less straightforward to apply them if (1) we want to exploit a combination of low entropy distributions over $\vin$ \emph{and} over $\vout$, or (2) we wish to leverage low entropy distributions of variables $v \in \vin$, or (3) both. For example, assume that we have a single low entropy distribution over some input $v_i \in \vin$, two low entropy distributions over intermediates $v_{m1}, v_{m2} \in \vmid$, and a single low entropy distribution over some output $v_o \in \vout$. After sparsifying these distributions, we can first multiply the sparsified distributions with $\pc(\mathcal{M}_B)$ in the PSDD multiplication chain, which exploits the sparsity of \emph{all} distributions simultaneously.\footnote{We validate this claim by randomly generating synthetic (sparse) PMFs and running the circuit multiplication chain.} The na\"ive loop approach detailed above cannot fully leverage this combination of sparse distributions.
+However, we note that in our particular use case, we can describe \textsc{MixColumn} by a set of \emph{linear equations}, since the algorithm only consists of linear operations (\textsc{xor}, \textsc{xtime}). This way, we can use a solver to overcome the challenges we have just described. Regardless, this na\"ive algorithm is difficult to extend to general, non-linear algorithms, while the PSDD representation can natively exploit the discussed combinations of sparse distributions.
+
+% Recall that Equation \ref{sec:loop} using a simple loop: For each assignment $\vin$ with $p(\vin | \leak) = \prod_{v \in \vin} p(v | \leak) > 0$, we compute the corresponding variables $\vmid, \vout$ using \textsc{MixColumn} and  Instead of $2^{32}$ loop iterations,  
+% note: MC is linear
+
+
+\section{Runtime}
+\label{sec:runtime}
+% No sophisticated profiling; research implementations not focused on performance
+% Emprically, similar performance to SASCA when implemented as loop (vectorized with numpy), slower with PSDD
+We explicitly note that we do not employ sophisticated profiling techniques and that the implementation of most algorithms we provide should be viewed as research artifacts and their performance could be significantly improved with sufficient engineering effort. Nevertheless, attack runtime is a crucial part of our evaluation: As discussed above, a trivial algorithm can perform exact probabilistic inference --- albeit at the cost of computational complexity. All SASCAs were performed using the SCALib \cite{scalib} library, which efficiently implements BP using the \emph{Rust} programming language \cite{scalib, rust}. A single SASCA takes tens to hundreds of milliseconds on a modern laptop CPU, depending on the number of BP iterations. Changes to the sparsity parameter $\varepsilon$ do not influence the runtime significantly. 
+
+The runtime of our PSDD methods consists of an offline SDD compilation step ($< 10$ seconds on a modern CPU) that is performed \emph{once}, and an online attack phase, whose performance heavily depends on $\varepsilon$: On a modern laptop CPU, a single attack takes hundreds of milliseconds for $\varepsilon = 10^{-2}$ and seconds for $\varepsilon \in \{ 10^{-5}, 10^{-8} \}$. The main computational bottleneck of these attacks is the sequence of circuit multiplications, which are based on open-source C\texttt{++} implementations\footnote{\url{https://github.com/hahaXD/psdd_nips}, \url{https://github.com/hahaXD/psdd}} that mostly operate in a sequential manner and do not leverage parallelism (e.g., to compute multiple inference problems simultaneously). We also run the na\"ive loop implementations of these attacks described in Section \ref{sec:loop} and observe that a highly-parallel \texttt{NumPy} \cite{numpy} implementation yields competitive runtimes compared to SASCA (tens of milliseconds on a modern laptop CPU).
+
+\section{SDD Compilation}
+\label{sec:sdd_comp_discussion}
+% assume we could compile sdd (w/ dynamic vtree min) such that the resulting sdd is succinct and respects a vtree v 
+There are two main challenges in our PSDD approaches that depend on each other: (1) Succinctly compiling $\mathcal{M}_B$ into an SDD, and (2) tractably computing the sequence of PSDD multiplications. To demonstrate the relationship between these tasks, assume that we could succinctly compile $\mathcal{M}_B$ into an SDD (using dynamic vtree minimization \cite{dynamic_min_choi}) that respects a vtree $v$ such that for all bytes $v_i \in \vv$, there exists an internal vtree node $v'$ that has \emph{exactly} the bits of $v_i$ under it (namely $v_i^{(1)},\dots,v_i^{(8)}$). In other words, the resulting SDD represents a boolean formula that disentangles all bytes $v_i \in \vv$. Given such an SDD, even without sparse approximations, the chain of PSDD multiplications can trivially be computed, since for any $v_i \in \vv$, the multiplication $\pc \left( \mathcal{M}_B(\vv) \right) \cdot \pc\left( p(v_i | \leak) \right)$ yields a circuit of the same size as $\pc \left( \mathcal{M}_B(\vv) \right)$.
+
+Unfortunately, compiling such an SDD is infeasible in practice, since the individual bits of \emph{different} bytes are heavily entangled in the \textsc{MixColumn} routine. While in this work, we utilize a compiler that solely optimizes the \emph{size} of the compiled SDD \cite{dynamic_min_choi}, future work can strike a trade-off between these tasks by building compilers that optimize both of these objectives simultaneously.% We elaborate on promising future research directions that 
+
+% \section{Order of PSDD Multiplication}
+

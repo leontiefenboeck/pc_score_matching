@@ -1,0 +1,11 @@
+\begin{tikzpicture}
+    \node[] (dot) {$\cdot$} ; %
+    \node[below=0.5cm of dot, xshift=-0.45cm] (a) {$A$} ; %
+    \node[right=0.5cm of a] (b) {$\cdot$} ; %
+
+    \edge[-] {a, b} {dot}; %
+    
+    \node[below=0.5cm of b, xshift=-0.55cm] (c) {$C$} ; %
+    \node[right=0.5cm of c] (ddot) {$D$} ; %
+    \edge[-] {c, ddot} {b}; %
+\end{tikzpicture}

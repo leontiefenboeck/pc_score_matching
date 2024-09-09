@@ -1,0 +1,17 @@
+\begin{tikzpicture}
+
+    \node[latent] (ptop) {$\lor$} ; %
+    \node[latent, below=0.8cm of ptop, xshift=-1.3cm] (xleft) {$\land$} ; %
+    \node[latent, right=2cm of xleft] (xright) {$\land$} ; %
+    \edge[-] {xleft, xright} {ptop}
+
+    % leafs
+    \node[latent, below=0.8cm of xleft, xshift=-0.7cm] (a1_left) {$A$} ; %
+    \node[latent, right=0.7cm of a1_left] (b1_left) {$\top$} ; %
+    \edge[-] {a1_left, b1_left} {xleft} ; %
+
+    \node[latent, below=0.8cm of xright, xshift=-0.7cm] (a1_right) {$\neg A$} ; %
+    \node[latent, right=0.7cm of a1_right] (b1_right) {$B$} ; %
+    \edge[-] {a1_right, b1_right} {xright} ; %
+
+\end{tikzpicture}

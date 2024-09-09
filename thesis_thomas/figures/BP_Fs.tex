@@ -1,0 +1,19 @@
+\begin{tikzpicture}
+    \node[xshift=-1.2cm, yshift=0.2cm, cloud, draw, fill = gray!10, minimum width = 4.5cm, minimum height = 4.5cm] {};
+    \factor[] {fs} {below:$f_s$} {} {}; %
+    \node[latent, left=of fs, yshift=0.7cm] (x1) {} ; %
+    \node[latent, below=1cm of x1] (x2) {} ; %
+    \node[above=0.2cm of x2] {$\vdots$};
+
+    \node[latent, right=3.3cm of fs] (x) {$x$} ; %
+    \factor[right=1cm of x, yshift=0.7cm] {f1} {} {} {}; %
+    \factor[below=1cm of f1] {f2} {} {} {}; %
+    \node[above=0.2cm of f2] {$\vdots$};
+
+    \node[above=0.05cm of fs, xshift=2.1cm] {$\underrightarrow{\rule[-6pt]{0pt}{2pt}{\mu_{f_s \to x}(x)}}$};
+    \node[above=0.05cm of x1, xshift=0.3cm, yshift=0.12cm] {$F_s(x, \xx_s)$};
+
+
+    \factoredge {x1,x2} {fs} {} ; %
+    \factoredge {x} {f1,f2,fs} {} ; %
+\end{tikzpicture}

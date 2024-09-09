@@ -1,0 +1,81 @@
+\begin{tikzpicture}%[trim left=5cm]
+    %     \draw (0,0) rectangle node{Test} (2,2);
+        \node (m) at (5,4) {$\mathcal{M}$};
+        \node (mb) at (5,2) {$\mathcal{M}_B$};
+        \node[text width=3.5cm, align=center] (sddcomp) at (5,0) [draw,minimum width=2cm,minimum height=2cm] {SDD Compiler with Vtree search};
+
+
+        \draw[->] (m) -- (mb) node[midway,left] {CNF};
+        \draw[->] (mb) -- (sddcomp) node[midway,above] {};
+
+        
+        \node (sdd_m) at (5,-2) {$\sdd(\mathcal{M}_B)$};
+        \node (psdd_m) at (5,-3.2) {$\pc(\mathcal{M}_B)$};
+        \draw[->] (sddcomp) -- (sdd_m) node[midway,above] {};
+        \draw[->] (sdd_m) -- (psdd_m) node[midway,above] {};
+        
+        \node[align=center] (vtree_full) at (9.5,0) [draw] {
+            \begin{tikzpicture}
+            \node[] (dot) {$\cdot$} ; %
+            \node[below=0.5cm of dot, xshift=-0.95cm] (a) {$\cdot$} ; %
+            \node[right=1.5cm of a] (b) {\huge $\vdots$} ; %
+    
+            \node[below=0.5cm of a, xshift=-0.55cm] (al) {$x_3^{(2)}$} ; %
+            \node[right=0.5cm of al] (bl) {$x_{12}^{(7)}$} ; %
+            \edge[-] {a, b} {dot}; %
+            \edge[-] {al, bl} {a}; %
+            \end{tikzpicture} \\
+            Vtree over all bits in $\vv$
+        };
+        
+        \node[align=center] (vtree_x1) at (15.5,2) [draw] {
+            \begin{tikzpicture}
+            \node[] (dot) {$\cdot$} ; %
+            \node[below=0.5cm of dot, xshift=-0.95cm] (a) {$x_1^{(6)}$} ; %
+            \node[right=1.3cm of a] (b) {$\cdot$} ; %
+    
+            \node[below=0.5cm of b, xshift=-0.55cm] (al) {$\vdots$} ; %
+            \node[right=0.5cm of al] (bl) {$x_{1}^{(3)}$} ; %
+            \edge[-] {a, b} {dot}; %
+            \edge[-] {al, bl} {b}; %
+            \end{tikzpicture} \\
+            Vtree over all bits in $x_1$
+        };
+        
+        \node[align=center] (vtree_x2) at (15.5,-2) [draw] {
+            \begin{tikzpicture}
+            \node[] (dot) {$\cdot$} ; %
+            \node[below=0.5cm of dot, xshift=-0.95cm] (a) {$\cdot$} ; %
+            \node[right=1.5cm of a] (b) {$x_2^{(1)}$} ; %
+    
+            \node[below=0.5cm of a, xshift=-0.55cm] (al) {$x_2^{(5)}$} ; %
+            \node[right=0.5cm of al] (bl) {$\vdots$} ; %
+            \edge[-] {a, b} {dot}; %
+            \edge[-] {al, bl} {a}; %
+            \end{tikzpicture} \\
+            Vtree over all bits in $x_2$
+        };
+        
+        \node (m) at (15.5,-4.5) {$\vdots$};
+        
+        \draw[->] (sddcomp) -- (vtree_full) node[midway,above] {};
+        \draw[->] (vtree_full) -- (vtree_x1) node[midway,above] {Project};
+        \draw[->] (vtree_full) -- (vtree_x2) node[midway,above] {Project};
+        
+        \node[text width=3cm, align=center] (pmfcomp1) at (20,2) [draw,minimum width=2cm,minimum height=2cm] {$\mathit{PMF} \to \mathit{PSDD}$ \\ Compiler};
+        \node (px1) at (20,4) {$p(x_1 | \leak)$};
+        \draw[->] (vtree_x1) -- (pmfcomp1) node[midway,above] {};
+        \draw[->] (px1) -- (pmfcomp1) node[midway,above] {};
+        
+        \node[text width=3cm, align=center] (pmfcomp2) at (20,-2) [draw,minimum width=2cm,minimum height=2cm] {$\mathit{PMF} \to \mathit{PSDD}$ \\ Compiler};
+        \node (px2) at (20,0) {$p(x_2 | \leak)$};
+        \draw[->] (vtree_x2) -- (pmfcomp2) node[midway,above] {};
+        \draw[->] (px2) -- (pmfcomp2) node[midway,above] {};
+        
+        \node (psdd_px1) at (24,2) {$\pc(p(x_1 | \leak))$};
+        \node (psdd_px2) at (24,-2) {$\pc(p(x_2 | \leak))$};
+        
+        \draw[->] (pmfcomp1) -- (psdd_px1) node[midway,above] {};
+        \draw[->] (pmfcomp2) -- (psdd_px2) node[midway,above] {};
+        
+\end{tikzpicture}
