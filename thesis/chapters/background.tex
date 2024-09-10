@@ -11,7 +11,7 @@
 In Machine Learning (ML) one of the core disciplines is modelling data in some manner to be able to 
 extract information, make predictions and perform all sorts of tasks of inference. 
 One way to achieve this is to use probability theory as a framework which provides a sound and consistent way to
-reason under uncertainty. We assume that the data was randomly  drawn from some underlying unknown distribution
+reason under uncertainty. We assume that the data was randomly drawn from some underlying unknown distribution
 \emph{out there} and we try to learn the distribution back from the data. \cite{pc_intro}
 
 I will get to how this can be learned in the future sections.
@@ -49,10 +49,10 @@ In score matching \cite{score_matching}
 
 Which leads to this score matching objective: 
 
-\begin{equation}
-    \label{eq:sm_objective}
-    \mathcal{J}(\theta) = \mathbb{E}_{p(x)} \left[\text{tr} \left( \nabla_x^2 \log p_\theta(x) \right) + \frac{1}{2} \left\| \nabla_x \log p_\theta(x) \right\|^2 \right]
-\end{equation}
+% \begin{equation}
+%     \label{eq:sm_objective}
+%     \mathcal{J}(\theta) = \mathbb{E}_{p(x)} \left[\text{tr} \left( \nabla_x^2 \log p_\theta(x) \right) + \frac{1}{2} \left\| \nabla_x \log p_\theta(x) \right\|^2 \right]
+% \end{equation}
 
 
 However this introduces another problem. With high dimensional data the trace of the hessian is very costly to compute.
@@ -62,10 +62,10 @@ the multidimensional data is projected onto n random vectors (slices). The autho
 
 Which leads to this final sliced score matching objective: 
 
-\begin{equation}
-    \label{eq:sm_objective}
-    \mathcal{J}(\theta) = \mathbb{E}_{p(x)} \left[  \left\| \vec{v^T} \nabla_x^2 \log p_\theta(x) \right\|^2 + \frac{1}{2} \left( \vec{v^T} \nabla_x \log p_\theta(x) \right)^@ \right]
-\end{equation}
+% \begin{equation}
+%     \label{eq:sm_objective}
+%     \mathcal{J}(\theta) = \mathbb{E}_{p(x)} \left[  \left\| \vec{v^T} \nabla_x^2 \log p_\theta(x) \right\|^2 + \frac{1}{2} \left( \vec{v^T} \nabla_x \log p_\theta(x) \right)^@ \right]
+% \end{equation}
 
 
 

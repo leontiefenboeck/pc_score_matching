@@ -9,7 +9,7 @@ import torch.autograd as autograd
 
 class GMM(nn.Module):
 
-    def __init__(self, n_components, n_features, means_init = 0):
+    def __init__(self, n_components, means_init=0, n_features=2):
         super(GMM, self).__init__()
         self.n_components = n_components
         self.n_features = n_features
