@@ -1,1 +1,5 @@
 code/einsum/data
+code/__pycache__
+gmm/__pycache__
+.DS_Store
+__pycache__
