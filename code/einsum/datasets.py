@@ -35,7 +35,7 @@ def maybe_download_mnist():
                    't10k-labels-idx1-ubyte.gz']
 
     for file in mnist_files:
-        # if not maybe_download('../data/mnist', 'http://yann.lecun.com/exdb/mnist/', file):
+        # if not maybe_download('data/mnist', 'https://www.kaggle.com/datasets/hojjatk/mnist-dataset?select=', file):
         #     continue
         print('unzip data/mnist/{}'.format(file))
         filepath = os.path.join('data/mnist/', file)
@@ -47,7 +47,7 @@ def maybe_download_mnist():
 def load_mnist():
     """Load MNIST"""
 
-    maybe_download_mnist()
+    # maybe_download_mnist()
 
     data_dir = 'data/mnist'
 

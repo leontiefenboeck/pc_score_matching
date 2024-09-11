@@ -4,15 +4,15 @@ import datasets
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-demo_text = """
-This demo loads one of the 20 binary datasets and quickly trains an EiNet for some epochs. 
+algorithm = 'SSM'
 
-There are some parameters to play with, as for example which dataset shall be used and some 
-structural parameters.
-"""
-print(demo_text)
+use_em = False
+if algorithm == 'EM': use_em = True
 
 ##########################################################
+DEBD = ['accidents', 'ad', 'baudio', 'bbc', 'bnetflix', 'book', 'c20ng', 'cr52', 'cwebkb', 'dna', 'jester', 'kdd',
+        'kosarek', 'moviereview', 'msnbc', 'msweb', 'nltcs', 'plants', 'pumsb_star', 'tmovie', 'tretail', 'voting']
+
 dataset = 'accidents'
 
 depth = 3
@@ -20,12 +20,31 @@ num_repetitions = 10
 num_input_distributions = 20
 num_sums = 20
 
-max_num_epochs = 10
+learning_rate = 0.1
+num_epochs = 10
 batch_size = 100
 online_em_frequency = 1
 online_em_stepsize = 0.05
 
-##########################################################
+# ----------------------------- functions -----------------------------
+def ssm_loss(einet, x, n_slices=1):
+    x = x.unsqueeze(0).expand(n_slices, *x.shape).contiguous().view(-1, *x.shape[1:])
+    x.requires_grad_(True)
+
+    v = torch.randn_like(x)
+
+    logp = einet(x)
+    logp = EinsumNetwork.log_likelihoods(logp)
+
+    # TODO: this does not work with Categorical Array 
+    score = torch.autograd.grad(logp.sum(), x, create_graph=True)[0]
+    loss1 = 0.5 * (torch.norm(score, dim=-1) ** 2)
+
+    grad2 = torch.autograd.grad(torch.sum(score * v), x, create_graph=True)[0]
+    loss2 = torch.sum(v * grad2, dim=-1)
+
+    return (loss1 + loss2).mean()
+# ---------------------------------------------------------------------
 
 print(dataset)
 
@@ -53,6 +72,7 @@ args = EinsumNetwork.Args(
     exponential_family_args={'K': 2},
     num_sums=num_sums,
     num_var=train_x.shape[1],
+    use_em=use_em,
     online_em_frequency=1,
     online_em_stepsize=0.05)
 
@@ -61,30 +81,44 @@ einet.initialize()
 einet.to(device)
 print(einet)
 
-for epoch_count in range(max_num_epochs):
+optimizer = torch.optim.Adam(einet.parameters(), lr=learning_rate)
 
-    # evaluate
-    train_ll = EinsumNetwork.eval_loglikelihood_batched(einet, train_x)
-    valid_ll = EinsumNetwork.eval_loglikelihood_batched(einet, valid_x)
-    test_ll = EinsumNetwork.eval_loglikelihood_batched(einet, test_x)
+for epoch_count in range(num_epochs):
 
-    print("[{}]   train LL {}   valid LL {}  test LL {}".format(epoch_count,
-                                                                train_ll / train_N,
-                                                                valid_ll / valid_N,
-                                                                test_ll / test_N))
+    ##### evaluate
+    einet.eval()
+    train_ll = EinsumNetwork.eval_loglikelihood_batched(einet, train_x, batch_size=batch_size)
+    valid_ll = EinsumNetwork.eval_loglikelihood_batched(einet, valid_x, batch_size=batch_size)
+    test_ll = EinsumNetwork.eval_loglikelihood_batched(einet, test_x, batch_size=batch_size)
+    print("[{}]   train LL {}   valid LL {}   test LL {}".format(
+        epoch_count,
+        train_ll / train_N,
+        valid_ll / valid_N,
+        test_ll / test_N))
+    einet.train()
+    #####
 
-    # train
-    idx_batches = torch.randperm(train_N).split(batch_size)
-    for batch_count, idx in enumerate(idx_batches):
+    idx_batches = torch.randperm(train_N, device=device).split(batch_size)
+
+    for idx in idx_batches:
         batch_x = train_x[idx, :]
-        outputs = einet.forward(batch_x)
 
-        ll_sample = EinsumNetwork.log_likelihoods(outputs)
-        log_likelihood = ll_sample.sum()
+        if algorithm == 'EM':
+            logp = EinsumNetwork.log_likelihoods(einet.forward(batch_x))
+            log_likelihood = logp.sum()
+            log_likelihood.backward()
+            einet.em_process_batch()
+        else: 
+            optimizer.zero_grad()
 
-        objective = log_likelihood
-        objective.backward()
+            if algorithm == 'SSM':
+                loss = ssm_loss(einet, batch_x)
+            if algorithm == 'SGD':
+                loss = -torch.mean(EinsumNetwork.log_likelihoods(einet.forward(batch_x)))
 
-        einet.em_process_batch()
+            loss.backward()
+            optimizer.step()
+        
+    if algorithm == 'EM': einet.em_update()
 
-    einet.em_update()
+print(EinsumNetwork.eval_loglikelihood_batched(einet, train_x, batch_size=batch_size))

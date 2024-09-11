@@ -57,3 +57,4 @@ def sample_matrix_categorical(p):
         rand = torch.rand((cp.shape[0], 1), device=cp.device)
         rand_idx = torch.sum(rand > cp, -1).long()
         return rand_idx
+    

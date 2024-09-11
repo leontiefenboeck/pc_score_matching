@@ -7,22 +7,17 @@ import utils
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-demo_text = """
-This demo loads (fashion) mnist and quickly trains an EiNet for some epochs. 
+algorithm = 'SSM'
 
-There are some parameters to play with, as for example which exponential family you want 
-to use, which classes you want to pick, and structural parameters. Then an EiNet is trained, 
-the log-likelihoods reported, some (conditional and unconditional) samples are produced, and
-approximate MPE reconstructions are generated. 
-"""
-print(demo_text)
+use_em = False
+if algorithm == 'EM': use_em = True
 
-############################################################################
+# ------------------------ constants -------------------------------
 fashion_mnist = False
 
 exponential_family = EinsumNetwork.BinomialArray
 # exponential_family = EinsumNetwork.CategoricalArray
-# exponential_family = EinsumNetwork.NormalArray
+exponential_family = EinsumNetwork.NormalArray
 
 classes = [7]
 # classes = [2, 3, 5, 7]
@@ -44,12 +39,30 @@ height = 28
 depth = 3
 num_repetitions = 20
 
+learning_rate = 0.1
 num_epochs = 5
 batch_size = 100
 online_em_frequency = 1
 online_em_stepsize = 0.05
-############################################################################
 
+# ----------------------------- functions -----------------------------
+def ssm_loss(einet, x, n_slices=1):
+    x = x.unsqueeze(0).expand(n_slices, *x.shape).contiguous().view(-1, *x.shape[1:])
+    x.requires_grad_(True)
+
+    v = torch.randn_like(x)
+
+    outputs = einet.forward(x)
+    logp = EinsumNetwork.log_likelihoods(outputs)
+
+    score = torch.autograd.grad(logp.sum(), x, create_graph=True)[0]
+    loss1 = 0.5 * (torch.norm(score, dim=-1) ** 2)
+
+    grad2 = torch.autograd.grad(torch.sum(score * v), x, create_graph=True)[0]
+    loss2 = torch.sum(v * grad2, dim=-1)
+
+    return (loss1 + loss2).mean()
+# ---------------------------------------------------------------------
 exponential_family_args = None
 if exponential_family == EinsumNetwork.BinomialArray:
     exponential_family_args = {'N': 255}
@@ -104,6 +117,7 @@ args = EinsumNetwork.Args(
         num_input_distributions=K,
         exponential_family=exponential_family,
         exponential_family_args=exponential_family_args,
+        use_em=use_em,
         online_em_frequency=online_em_frequency,
         online_em_stepsize=online_em_stepsize)
 
@@ -118,6 +132,8 @@ print(einet)
 train_N = train_x.shape[0]
 valid_N = valid_x.shape[0]
 test_N = test_x.shape[0]
+
+optimizer = torch.optim.Adam(einet.parameters(), lr=learning_rate)
 
 for epoch_count in range(num_epochs):
 
@@ -136,18 +152,26 @@ for epoch_count in range(num_epochs):
 
     idx_batches = torch.randperm(train_N, device=device).split(batch_size)
 
-    total_ll = 0.0
     for idx in idx_batches:
         batch_x = train_x[idx, :]
-        outputs = einet.forward(batch_x)
-        ll_sample = EinsumNetwork.log_likelihoods(outputs)
-        log_likelihood = ll_sample.sum()
-        log_likelihood.backward()
 
-        einet.em_process_batch()
-        total_ll += log_likelihood.detach().item()
+        if algorithm == 'EM':
+            logp = EinsumNetwork.log_likelihoods(einet.forward(batch_x))
+            log_likelihood = logp.sum()
+            log_likelihood.backward()
+            einet.em_process_batch()
+        else: 
+            optimizer.zero_grad()
 
-    einet.em_update()
+            if algorithm == 'SSM':
+                loss = ssm_loss(einet, batch_x)
+            if algorithm == 'SGD':
+                loss = -torch.mean(EinsumNetwork.log_likelihoods(einet.forward(batch_x)))
+
+            loss.backward()
+            optimizer.step()
+        
+    if algorithm == 'EM': einet.em_update()
 
 if fashion_mnist:
     model_dir = 'models/einet/demo_fashion_mnist/'

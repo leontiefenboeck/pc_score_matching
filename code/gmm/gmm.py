@@ -119,10 +119,10 @@ class GMM(nn.Module):
         logp = self(x)
         score = autograd.grad(logp.sum(), x, create_graph=True)[0]
 
-        gradv = score * v
-        loss1 = 0.5 * (torch.sum(gradv, dim=-1) ** 2)
+        loss1 = 0.5 * (torch.norm(score, dim=-1) ** 2)
 
-        grad2 = torch.autograd.grad(torch.sum(gradv), x, create_graph=True)[0]
+        grad2 = torch.autograd.grad(torch.sum(score * v), x, create_graph=True)[0]
+
         loss2 = torch.sum(v * grad2, dim=-1)
 
         return (loss1 + loss2).mean()
