@@ -35,6 +35,7 @@ help:
 #help	all	see "pdf"
 .PHONY: all
 all: pdf
+	@$(MAKE) purge
 
 #help	pdf	creates a pdf file using pdflatex
 .PHONY: pdf

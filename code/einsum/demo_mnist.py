@@ -17,7 +17,7 @@ fashion_mnist = False
 
 exponential_family = EinsumNetwork.BinomialArray
 # exponential_family = EinsumNetwork.CategoricalArray
-exponential_family = EinsumNetwork.NormalArray
+# exponential_family = EinsumNetwork.NormalArray
 
 classes = [7]
 # classes = [2, 3, 5, 7]

@@ -8,15 +8,37 @@
 \section{Probabilistic Modelling}
 \label{sec:pm}
 
-In Machine Learning (ML) one of the core disciplines is modelling data in some manner to be able to 
-extract information, make predictions and perform all sorts of tasks of inference. 
-One way to achieve this is to use probability theory as a framework which provides a sound and consistent way to
-reason under uncertainty. We assume that the data was randomly drawn from some underlying unknown distribution
-\emph{out there} and we try to learn the distribution back from the data. \cite{pc_intro}
+At it's very core Machine Learning (ML) aims to create algorithms/programs that learn from data in order to reason about it, make future
+predictions or perform all kinds of different inference tasks. One possible way to achieve this, especially when there is an inherent 
+uncertainty in the data, which is the case for most real-world scenarios, is Probabilistic Modelling. In Probabilistic Modelling we 
+use probabilities to express this uncertainty and the rules of probability theory for inference. \\
+To make this more clear let's say we have some data and assume that this data was drawn randomly from some unknown distribution. 
+We would call this distribution $P^*$. If this distribution was known to us all inference tasks would boil down to applying the basic 
+rules of probability theory. The sum rule to compute marginals, the product rule to compute conditionals and more complex rules, derived 
+from these two, to perform harder inference tasks. \\
+However since we don't know $P^*$, we have to do something different, which leads us to a basic definition of probabilistic modelling:
+Through machine learning methods we create a framework that approximates an original unknown distribution, from which we only have limited samples, 
+as closely as possible in order to reason about it with the rules of probability theory. \cite{pc_intro}. \\
 
-I will get to how this can be learned in the future sections.
+Before continuing with different approaches to probabilistic modelling, I want to introduce two key concepts that are often 
+used to discuss these different methods. \\
 
+Definition 1: Expressiveness - a probabilistic model is called expressive if the learned distribution approximates the original distribution to a high degree.
+For instance this can be measured with Kullback-Leibler (KL) divergence \cite{kl_divergence}, which measures how similar two probability distributions are. 
+Two identical distributions would then have a KL-divergence of $0$. In the Probabilistic Modelling case a KL-divergence of 0 would mean that the model is most exxpressive. \\
 
+Definition 2: Tractability - a probabilistic model is called tractable with respect to an inference task, if the model can complete this 
+task exactly and efficiently. Exactly in this case means without relying on approximation e.g. Monte-Carlo Simulation and efficiently 
+means in linear time with respect to the model size. \\
+
+In recent years expressive capability has increased considerably through models based on neural networks like Generative-Adversarial
+Networks (GANs) \cite{gan}, Variational Autoencoder (VAE) \cite{vae} and many others. However what these models excel in for instance generating 
+very realistic images or compelling text in language modelling, they lack in tractability for all except the most simplest inference tasks. 
+\cite{pc_intro} \\
+
+On the other hand there are many mostly older, less complex models like Gaussian Mixture Models (GMMs), Hidden Markos Models (HMMs) and so on, 
+that lack in expressiveness and only work well enough for very simple data but can compute most if not all inference tasks tractably, which directly
+leads to Probabilistic Circuits.  
 
 
 \section{Probabilistic Circuits}
@@ -34,6 +56,9 @@ all sort of inference tasks tractably.
 Probabilistic Circuits are a framework for probabilistic models that try to be both expressive and tractable. 
 In essence they try to achieve this by only introducing complexity in a controlled manner. To be valid a PC must 
 adhere to certain structural constraints. 
+
+\section{Score Matching}
+\label{sec:sm}
 
 \section{Sliced Score Matching}
 \label{sec:ssm}
