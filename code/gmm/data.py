@@ -2,7 +2,7 @@ from sklearn.datasets import make_moons
 import torch
 
 
-def get_2d(dataset, n_samples=500, seed=42):
+def get_2d(dataset, n_samples, seed=42):
 
     z = torch.randn(n_samples, 2)
 

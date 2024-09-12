@@ -36,10 +36,10 @@ def plot_density(model, grid, ax=plt):
     ax.set_title("Density")
     ax.contour(X, Y, density.reshape(X.shape), levels=200)
 
-def plot_loss(model, ax=plt):
-    ax.set_title("loss")
+def plot_loss(model, ax=plt, title='loss'):
+    ax.set_title(title)
     ax.plot(model.get_loss())
 
-def plot_logp(model, ax):
-    ax.set_title("logp")
+def plot_logp(model, ax=plt, title='logp'):
+    ax.set_title(title)
     ax.plot(model.get_logp())
