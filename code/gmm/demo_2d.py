@@ -7,14 +7,14 @@ from sklearn.cluster import KMeans
 
 # TODO better visualization for thesis
 
-dataset = 'spirals'
+dataset = 'board'
 algorithm = ['EM', 'SGD', 'SM', 'SSM']
-# algorithm = ['SM']
+# algorithm = ['SGD']
 
 # ----------------------------- parameters -------------------------------
 num_samples = 5000
 
-K = 50 # number of components 
+K = 20 # number of components 
 
 lr = 0.01
 epochs = 100
@@ -43,9 +43,11 @@ for a in algorithm:
 fig, ax = plt.subplots(1, len(models) + 1, figsize=(25, 5))
 
 range_lim = 4
+if dataset == 'moons': range_lim = 2
 bins = 200
 
 rang = [[-range_lim, range_lim], [-range_lim, range_lim]]
+
 ax[0].hist2d(x[:, 0], x[:, 1], range=rang, bins=bins, cmap=plt.cm.viridis)
 ax[0].set_title(f'ground truth')
 
