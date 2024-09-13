@@ -1,3 +1,5 @@
+\usetikzlibrary{calc}
+
 \renewcommand{\vec}[1]{\textbf{#1}}
 \newcommand{\norm}[1]{\left\lVert#1\right\rVert}
 
@@ -12,13 +14,25 @@ At it's very core Machine Learning (ML) aims to create algorithms/programs that 
 predictions or perform all kinds of different inference tasks. One possible way to achieve this, especially when there is an inherent 
 uncertainty in the data, which is the case for most real-world scenarios, is Probabilistic Modelling. In Probabilistic Modelling we 
 use probabilities to express this uncertainty and the rules of probability theory for inference. \\
-To make this more clear let's say we have some data and assume that this data was drawn randomly from some unknown distribution. 
-We would call this distribution $P^*$. If this distribution was known to us all inference tasks would boil down to applying the basic 
+To make this more clear let's say we have some two dimensional data, the variables $X$ and $Y$ and assume that this data was drawn randomly from some unknown distribution. 
+We would call this distribution $P^*(X, Y)$. 
+
+\begin{definition}[joint distribution]
+    A distribution over all input variables $P(X, Y)$ is called a joint distribution.
+\end{definition}
+
+If the distribution $P^*(X, Y)$. was known to us all inference tasks would boil down to applying the basic 
 rules of probability theory. The sum rule to compute marginals, the product rule to compute conditionals and more complex rules, derived 
 from these two, to perform harder inference tasks. \\
-However since we don't know $P^*$, we have to do something different, which leads us to a basic definition of probabilistic modelling:
-Through machine learning methods we create a framework that approximates an original unknown distribution, from which we only have limited samples, 
+However since we don't know $P^*(X, Y)$, we have to do something different, which leads us to a basic definition of probabilistic modelling:
+Through machine learning we create a framework that models $P(X, Y)$, approximating the unknown true distribution $*P(X, Y)$, of which we only have limited samples, 
 as closely as possible in order to reason about it with the rules of probability theory. \cite{pc_intro}. \\
+
+\begin{definition}[generative model]
+    A framework that models a joint distribution $P(X, Y)$ is called a generative model.
+\end{definition}
+
+% TODO maybe include how this is done (Maximum Likelyhood) here
 
 Before continuing with different approaches to probabilistic modelling, I want to introduce two key concepts that are often 
 used to discuss these different methods. \\
@@ -37,25 +51,124 @@ very realistic images or compelling text in language modelling, they lack in tra
 \cite{pc_intro} \\
 
 On the other hand there are many mostly older, less complex models like Gaussian Mixture Models (GMMs), Hidden Markos Models (HMMs) and so on, 
-that lack in expressiveness and only work well enough for very simple data but can compute most if not all inference tasks tractably, which directly
-leads to Probabilistic Circuits.  
-
+that lack in expressiveness and only work well enough for very simple data but can compute most if not all inference tasks tractably.
 
 \section{Probabilistic Circuits}
 \label{sec:pc}
 
-Recent progress in probabilistic modelling through .. have pushed the expressive capability (how close the 
-approximated distribution is to the true one) ever forward. However what expressive gains these models achieve through 
-their complexity they loose in tractability, the ability to perform inference tasks exactly and efficiently.
-More concretely tractability in one inference task means that a model can perform the task exactly, without approximation, and in polynomial time with respct to the model size.
-Except for the simplest taks, these models must rely on costly approximation.
+Probabilistic Circuit (PC) is an umbrella term for probabilistic models that can perform most inference tasks tractably but can be 
+highly expressive at the same time. In general this is achieved by only introducing complexity in a structured manner. More specifically
+for a PC to be valid it has to adhere to certain structural properties, but more on that later. \\
 
-On the other hand older approaches like .. which are less complex and therefore lack in expressiveness can perform 
-all sort of inference tasks tractably.
+Prominent members of the PC class include .., but I will only be focusing on Sum Product Networks (SPNs) \cite{spn}, which to my 
+knowledge has seen the widest adoption. 
 
-Probabilistic Circuits are a framework for probabilistic models that try to be both expressive and tractable. 
-In essence they try to achieve this by only introducing complexity in a controlled manner. To be valid a PC must 
-adhere to certain structural constraints. 
+In General one can think of a SPN as a structured neural network that consists of leaf nodes, sum nodes and product 
+nodes. A SPN then recursively computes weighted mixtures, with sum nodes, or factorizations, with product nodes, from simple input distributions (leaf nodes). 
+These inputs can basically be any probability distribution like Gaussians, Bernoullies, a Categroical distribution and so on,
+however most of the time we will talk about Gaussians.
+
+Considering this, one could notice that the simplest form of a SPN is just a basic 
+Gaussian Mixture Model (GMM), where one sum node mixes two leaf nodes, as depicted in Figure~\ref{fig:spn_gmm}.
+
+\begin{figure}[h!]
+    \centering
+    \begin{tikzpicture}[
+        node distance=1.5cm and 2.5cm,
+        sum/.style={circle, draw=black, thick, minimum size=8mm, inner sep=0pt},
+        input/.style={circle, draw=black, thick, minimum size=8mm, inner sep=0pt}
+    ]
+
+    % Nodes
+    \node[input] (input1) {$X_1$};
+    \node[input, right=of input1] (input2) {$X_1$};
+    \node[sum, above=1.5cm of $(input1)!0.5!(input2)$] (sum) {$+$};
+
+    % Edges
+    \draw[->, thick] (input1) -- node[midway,left] {$w_1$} (sum);
+    \draw[->, thick] (input2) -- node[midway,right] {$w_2$} (sum);
+
+    \end{tikzpicture}
+    \caption{Simplest SPN}
+    \label{fig:spn_gmm}
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \begin{tikzpicture}[
+        node distance=1.5cm and 2.5cm,
+        sum/.style={circle, draw=black, thick, minimum size=8mm, inner sep=0pt},
+        input/.style={circle, draw=black, thick, minimum size=8mm, inner sep=0pt},
+        product/.style={circle, draw=black, thick, minimum size=8mm, inner sep=0pt}
+    ]
+
+    % Nodes
+    \node[input] (input1) {$X_1$};
+    \node[input, right=of input1] (input2) {$X_1$};
+    \node[input, right=of input2] (input3) {$X_2$};
+    \node[input, right=of input3] (input4) {$X_2$};
+
+    \node[sum, above=1.5cm of $(input1)!0.5!(input2)$] (sum1) {$+$};
+    \node[sum, above=1.5cm of $(input3)!0.5!(input4)$] (sum2) {$+$};
+    
+    \node[product, above=1.5cm of $(sum1)!0.5!(sum2)$] (prod) {$\times$};
+
+    % Edges
+    \draw[->, thick] (input1) -- node[midway,left] {$w_1$} (sum1);
+    \draw[->, thick] (input2) -- node[midway,right] {$w_2$} (sum1);
+    
+    \draw[->, thick] (input3) -- node[midway,left] {$w_3$} (sum2);
+    \draw[->, thick] (input4) -- node[midway,right] {$w_4$} (sum2);
+
+    \draw[->, thick] (sum1) -- (prod);
+    \draw[->, thick] (sum2) -- (prod);
+
+    \end{tikzpicture}
+    \caption{Simple SPN}
+    \label{fig:spn_layered}
+\end{figure}
+
+Furthermore an only slightly more complex SPN with a product node and two sum node can be seen in Figure~\ref{fig:spn_layered}. 
+Altough this is still very very basic it is a great starting point to intruduce and make sense of two central structural 
+properties that allows SPNs to be expressive and tractable. 
+
+In the following Definitions PC and SPN can be used interchangebly.
+
+\begin{definition}[Scope]
+    If a PC $P$ models the joint distribution of a set of variables $\xx$, each node of $P$ models a distribution over a subset of $\xx$.
+    This subset is called the scope of the node. For a leaf node the scope is the input variable to that leaf, for all other nodes the scope 
+    is the union of its children's scopes. So the root node always has scope $\xx$. \cite{pc_intro}
+\end{definition}
+
+\begin{definition}[Smoothness]
+    A sum node is \textit{smooth} if all its inputs have identical scopes. A PC is smooth if all its sum nodes are smooth. \cite{pc_intro}
+\end{definition}
+\begin{definition}[Decomposability]
+    A product node is \textit{decomposable} if all it's input scopes do not share variables. A PC is decomposable if all of its product nodes are decomposable. \cite{pc_intro}
+\end{definition}
+
+In simple terms this basically means that sum nodes are only allowed to have inputs over the same variable and product nodes are
+only allowed to have inputs over different variables. The two depicted SPNs are smooth and decomposable.
+
+There are more structural properties that a SPN or PC can fullfill, however these two already guarantee tractable computation of 
+marginals (MAR) and conditionals (CON)\cite{pc_intro}, which many other models can't do and is already very useful in many scenarios. 
+Generally the more structure a PC has, which means more structural properties it must fullfill, the more inference tasks it can compute 
+tractably. 
+
+In \cite{pc_intro} there is in depth explanation, why these properties guarantee tractable inference 
+and further discussion on other properties.
+
+Using a SPN in a real-world scenario then would bacisally entail first deciding on a structure (which properties and leaf 
+distributions to use and how the nodes should be aranged in the graph) depending on the task at hand and then do a Maximum Likelihood 
+Estimation with the weights of the sum nodes and the parameters of the leaf distributions (e.g. means and variances for a Gaussian). 
+This omptimization is usually done via Gradient Descent or the Expectation-Maximization (EM) algorithm, 
+which is also very popular with Gaussian Mixture Models. 
+
+It is also noteworthy here that a SPN is a normalized model, which means it models a proper density (that integrates to $1$ over the entire real space). 
+This makes the omptimization with Maximum Likelihood very straightforward as the model directly outputs the Likelihood when evaluated at one datapoint and 
+we can just minimize the negative of this output, in turn maximizing the Likelihood.
+Though normally, as with most models, we model the log-likelihood for numerical stability.
+
 
 \section{Score Matching}
 \label{sec:sm}

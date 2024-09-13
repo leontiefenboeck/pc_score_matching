@@ -65,12 +65,12 @@ view: pdf
 #help	clean	clean up temporary files
 .PHONY: clean
 clean: 
-	-rm -r *.bcf *.run.xml _*_.* *~ *.aux *-blx.bib *.bbl ${MAINDOCUMENTBASENAME}.dvi *.ps *.blg *.idx *.ilg *.ind *.toc *.log *.log *.brf *.out *.lof *.lot *.gxg *.glx *.gxs *.glo *.gls *.tdo -f
+	-rm -f *.bcf *.run.xml _*_.* *~ *.aux *-blx.bib *.bbl ${MAINDOCUMENTBASENAME}.dvi *.ps *.blg *.idx *.ilg *.ind *.toc *.log *.log *.brf *.out *.lof *.lot *.gxg *.glx *.gxs *.glo *.gls *.tdo 
 
 #help	purge	cleaner than clean ;-)
 .PHONY: purge
 purge: clean
-	-rm 20*.pdf *.ps -f
+	-rm -f 20*.pdf *.ps 
 
 #help	force	force rebuild next run
 .PHONY: force
