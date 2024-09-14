@@ -7,14 +7,14 @@ from sklearn.cluster import KMeans
 
 # TODO better visualization for thesis
 
-dataset = 'board'
+dataset = 'spirals'
 algorithm = ['EM', 'SGD', 'SM', 'SSM']
 # algorithm = ['SGD']
 
 # ----------------------------- parameters -------------------------------
 num_samples = 5000
 
-K = 20 # number of components 
+K = 30 # number of components 
 
 lr = 0.01
 epochs = 100

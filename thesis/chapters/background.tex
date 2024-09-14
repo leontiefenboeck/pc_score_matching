@@ -173,32 +173,58 @@ Though normally, as with most models, we model the log-likelihood for numerical 
 \section{Score Matching}
 \label{sec:sm}
 
+Score Matching \cite{sm} is a concept that is normally used when dealing with unnormalized models like Energy Based Models (EBMs). Here 
+Energy typically just refurs to an unnormalized density. It is noteworthy, that most models represent unnormalized densities, 
+because usually there is not a straightforward way to ensure that the model outputs a proper density.
+Learning these models through Maximum Likelihood Estimation can be difficult because of the computationally infeasible normalization 
+constant, usually called $Z_\theta$.
+
+
+In Equation\ref{eq:pdf} the relation between a parameterized density $p_\theta$ and an Energy $E_\theta$ is expressed. Notice that calculating the normalization constant would 
+mean computing the integral over $E_\theta$.
+
+\begin{equation}
+    \label{eq:pdf}
+    p_\theta(\vec x) = \frac{e^{-E_\theta(\vec x)}}{Z_\theta}
+\end{equation}
+
+Score Matching proposes a workaround by working with the log gradient $\nabla_x \log \ p_\theta(\vec x)$ of the density, 
+instead of maximinzing $p_\theta(\vec x)$. \\
+
+Calculating $\nabla_x \log p_\theta(\vec x)$ results in $- \nabla_x E_\theta(\vec x)$ since 
+\[\nabla_x \log p_\theta(\vec x) = \nabla_x \log \ \frac{e^{- E_\theta(\vec x)}}{Z_\theta} = \nabla_x \left( - E_\theta(\vec x) - {Z_\theta} \right) = - \nabla_x E_\theta(\vec x)\]
+thus removing $Z_\theta$.\\
+
+$\nabla_x \log p_\theta(\vec x)$ is called the score function giving score matching it's name.
+Using the score which I will further refer to as $s_\theta$ the author of \cite{sm} proposes to minimize the Fisher Divergence between 
+the scores of the data and the scores of the model, defined as 
+
+\begin{equation}
+    L(\theta) = \frac{1}{2} \mathbb{E}_{p_d(x)} \left[ \norm{s_\theta(x) - s_d(x)}^2_2 \right]
+\end{equation}
+
+as the objective function. Here $p_d$ and $s_d$ refer to the density of the data and the score of the data respectively.
+
+This objective doesn't depend on the intractable normalization function, however it depends on the score function of the data 
+$s_d(x)$ which is unknown. Furthermore in \cite{sm} it is shown that by partial integration this objective function can be expressed as 
+
+\begin{align}
+    \label{eq:sm_objective}
+    \mathcal{J}(\theta) & = \mathbb{E}_{p_d(x)} \left[\text{tr} \left( \nabla_x s_\theta(x) \right) + \frac{1}{2} \left\| s_\theta(x) \right\|^2 \right] \notag \\ 
+    & = \mathbb{E}_{p_d(x)} \left[\text{tr} \left( \nabla_x^2 \log p_\theta(x) \right) + \frac{1}{2} \left\| \nabla_x \log p_\theta(x) \right\|^2 \right]
+\end{align}
+
+which is the final score matching objective that doesn't depend on the score of the data $s_d$ anymore and can be used for learning. Here tr() refers to the
+trace (sum of the diagonals) of the hessian matrix.
+
 \section{Sliced Score Matching}
 \label{sec:ssm}
 
-Why score matching instead of minimizing NLL? should i even write about unnormalized models?
-how much detail for sm and ssm? 
-
-As described before, we want to learn the PDF of the data. In the case of PCs we directly model a normalized (integrates to 1)
-density but most other approaches model a unnormalized density. This is because the normalization constant is 
-very costly or impossible to compute in these scenarios. 
-
-In score matching \cite{score_matching} 
-
-Which leads to this score matching objective: 
-
-% \begin{equation}
-%     \label{eq:sm_objective}
-%     \mathcal{J}(\theta) = \mathbb{E}_{p(x)} \left[\text{tr} \left( \nabla_x^2 \log p_\theta(x) \right) + \frac{1}{2} \left\| \nabla_x \log p_\theta(x) \right\|^2 \right]
-% \end{equation}
-
-
-However this introduces another problem. With high dimensional data the trace of the hessian is very costly to compute.
-
-Here sliced score matching \cite{sliced_score_matching} is introduced. Instead of doing the costly hessian calculation
-the multidimensional data is projected onto n random vectors (slices). The authors in the paper show that ..
-
-Which leads to this final sliced score matching objective: 
+While Score Matching get's rid of the normalization constant $Z_\theta$ as seen above, it introduces another term that can become hard
+to compute. To calculate the trace of the hessian in Equation \ref{eq:sm_objective} one derivation has to take place for each diagonal element.
+This basically means that the number of derivations needed equals the dimension of the data. 
+While this is fine for low dimensional data it quickly becomes unfeasible when
+learing higher dimensional data like images.  
 
 % \begin{equation}
 %     \label{eq:sm_objective}
