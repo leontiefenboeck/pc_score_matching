@@ -13,26 +13,20 @@
 At it's very core Machine Learning (ML) aims to create algorithms/programs that learn from data in order to reason about it, make future
 predictions or perform all kinds of different inference tasks. One possible way to achieve this, especially when there is an inherent 
 uncertainty in the data, which is the case for most real-world scenarios, is Probabilistic Modelling. In Probabilistic Modelling we 
-use probabilities to express this uncertainty and the rules of probability theory for inference. \\
-To make this more clear let's say we have some two dimensional data, the variables $X$ and $Y$ and assume that this data was drawn randomly from some unknown distribution. 
-We would call this distribution $P^*(X, Y)$. 
+use probabilities to express this uncertainty and the rules of probability theory for inference. 
 
-\begin{definition}[joint distribution]
-    A distribution over all input variables $P(X, Y)$ is called a joint distribution.
-\end{definition}
-
-If the distribution $P^*(X, Y)$. was known to us all inference tasks would boil down to applying the basic 
+To make this more clear let's say we have some two dimensional data, from variables $X$ and $Y$ and assume that this data was drawn randomly from some unknown distribution. 
+We would call this distribution over all possible variables the joint distribution $P^*(X, Y)$. 
+If the distribution $P^*(X, Y)$ was known to us all inference tasks would boil down to applying the basic 
 rules of probability theory. The sum rule to compute marginals, the product rule to compute conditionals and more complex rules, derived 
-from these two, to perform harder inference tasks. \\
-However since we don't know $P^*(X, Y)$, we have to do something different, which leads us to a basic definition of probabilistic modelling:
-Through machine learning we create a framework that models $P(X, Y)$, approximating the unknown true distribution $*P(X, Y)$, of which we only have limited samples, 
-as closely as possible in order to reason about it with the rules of probability theory. \cite{pc_intro}. \\
+from these two, to perform harder inference tasks. 
 
-\begin{definition}[generative model]
-    A framework that models a joint distribution $P(X, Y)$ is called a generative model.
-\end{definition}
+However since we don't know $P^*(X, Y)$, we have to do something different.
+Through machine learning we create a framework that \emph{models} $P(X, Y)$, approximating the unknown true distribution $P^*(X, Y)$, of which we only have limited samples.
+We would call a framework, that models the joint distribution a Generative Probabilistic Model. 
+After \emph{learning} this model trough the data, which is usually done via Maximum Likelihood Estimation, we can again perform inference using the rules 
+of probability theory. And if the model approximates the true distribution close enough we can expect reliable results. \cite{pc_intro}. \\
 
-% TODO maybe include how this is done (Maximum Likelyhood) here
 
 Before continuing with different approaches to probabilistic modelling, I want to introduce two key concepts that are often 
 used to discuss these different methods. \\
