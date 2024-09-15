@@ -28,7 +28,7 @@ def maybe_download(directory, url_base, filename):
     return True
 
 
-def maybe_download_mnist():
+def maybe_download_mnist(data_dir):
     mnist_files = ['train-images-idx3-ubyte.gz',
                    'train-labels-idx1-ubyte.gz',
                    't10k-images-idx3-ubyte.gz',
@@ -38,7 +38,7 @@ def maybe_download_mnist():
         # if not maybe_download('data/mnist', 'https://www.kaggle.com/datasets/hojjatk/mnist-dataset?select=', file):
         #     continue
         print('unzip data/mnist/{}'.format(file))
-        filepath = os.path.join('data/mnist/', file)
+        filepath = os.path.join(data_dir, file)
         with gzip.open(filepath, 'rb') as f_in:
             with open(filepath[0:-3], 'wb') as f_out:
                 shutil.copyfileobj(f_in, f_out)
@@ -47,9 +47,9 @@ def maybe_download_mnist():
 def load_mnist():
     """Load MNIST"""
 
-    # maybe_download_mnist()
+    data_dir = os.path.join('data', 'mnist')
 
-    data_dir = 'data/mnist'
+    # maybe_download_mnist(data_dir)
 
     fd = open(os.path.join(data_dir, 'train-images-idx3-ubyte'))
     loaded = np.fromfile(file=fd, dtype=np.uint8)

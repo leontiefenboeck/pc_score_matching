@@ -5,3 +5,6 @@ gmm/__pycache__
 __pycache__
 code/einsum/.DS_Store
 code/einsum/data/.DS_Store
+code/einsum/datasets.py
+code/einsum/EinsumNetwork/__pycache__
+code/einsum/__pycache__

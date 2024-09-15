@@ -17,7 +17,7 @@ fashion_mnist = False
 
 exponential_family = EinsumNetwork.BinomialArray
 # exponential_family = EinsumNetwork.CategoricalArray
-exponential_family = EinsumNetwork.NormalArray
+# exponential_family = EinsumNetwork.NormalArray
 
 classes = [7]
 # classes = [2, 3, 5, 7]
@@ -40,7 +40,7 @@ depth = 3
 num_repetitions = 20
 
 learning_rate = 0.1
-num_epochs = 5
+num_epochs = 10
 batch_size = 100
 online_em_frequency = 1
 online_em_stepsize = 0.05
