@@ -3,10 +3,6 @@ import torch.nn as nn
 import torch.distributions as dist
 import torch.autograd as autograd
 
-# vergleiche SDG, EM, SSM, SM (random seeds, lr, epochs, data)
-# gmm zu pc 
-# ssm  mit mehr slices
-
 class GMM(nn.Module):
 
     def __init__(self, n_components, means_init=0, n_features=2):
@@ -72,13 +68,12 @@ class GMM(nn.Module):
 
         return samples
     
-    def train_torch(self, x, algorithm, epochs=1000, lr=0.001, n_slices=1):
+    def train_torch(self, x, algorithm, epochs, lr, n_slices=1):
         optimizer = torch.optim.Adam(self.parameters(), lr=lr)
 
         x.requires_grad_()
-        for _ in range(epochs):
-            optimizer.zero_grad()
-
+        for i in range(epochs):
+            
             if algorithm == "SGD":
                 loss = -torch.mean(self(x))
             if algorithm == "SSM":
@@ -88,17 +83,19 @@ class GMM(nn.Module):
 
             self.loss_curve.append(loss.item())
             self.logp_curve.append(-torch.mean(self(x)).detach().item())
+                
+            optimizer.zero_grad()
             loss.backward()
-
-            # torch.nn.utils.clip_grad_norm_(self.parameters(), 1.0)
             optimizer.step()
-        
-        print(f'{algorithm}-logp = {self.logp_curve[-1]}')
+
+            if i % (epochs / 10) == 0: print(f'[{i}]       {algorithm}-logp = {self.logp_curve[-1]}')
+
+        print(f'[{epochs}]       {algorithm}-logp = {self.logp_curve[-1]}') 
 
     def sm_loss(self, x):
-        x.requires_grad_()
 
         logp = self(x).sum()
+
         score = autograd.grad(logp, x, create_graph=True)[0]
         loss1 = 0.5 * torch.norm(score, dim=-1) ** 2
         
@@ -111,18 +108,16 @@ class GMM(nn.Module):
     
     def ssm_loss(self, x, n_slices):
         x = x.unsqueeze(0).expand(n_slices, *x.shape).contiguous().view(-1, *x.shape[1:])
-        x.requires_grad_(True)
 
         v = torch.randn_like(x)
         # v = v / torch.norm(v, dim=-1, keepdim=True)
 
         logp = self(x)
-        score = autograd.grad(logp.sum(), x, create_graph=True)[0]
 
+        score = autograd.grad(logp.sum(), x, create_graph=True)[0]
         loss1 = 0.5 * (torch.norm(score, dim=-1) ** 2)
 
         grad2 = torch.autograd.grad(torch.sum(score * v), x, create_graph=True)[0]
-
         loss2 = torch.sum(v * grad2, dim=-1)
 
         return (loss1 + loss2).mean()

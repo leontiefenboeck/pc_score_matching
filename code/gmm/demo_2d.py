@@ -7,43 +7,64 @@ from sklearn.cluster import KMeans
 
 # TODO better visualization for thesis
 
-dataset_num = 0
+dataset = 'spirals'
+algorithm = ['EM', 'SGD', 'SM', 'SSM']
+# algorithm = ['SGD']
 
-datasets = ['moon', 'spirals', 'board']
-dataset = datasets[dataset_num]
-components = [8, 100, 100]
-K = components[dataset_num]
+# ----------------------------- parameters -------------------------------
+num_samples = 5000
 
-algos = ['EM', 'SGD', 'SM', 'SSM']
-algos = ['SSM']
+K = 30 # number of components 
+
+lr = 0.01
+epochs = 100
+
+n_slices = 1 # how many random vectors for sliced score matching
 
 seed = 42
-n_slices = 1 # for sliced score matching
 
-epochs = 500
-lr = 0.01
-
-x = data.get_2d(dataset)
+# -------------------------------- data ----------------------------------
+x = data.get_2d(dataset, num_samples)
 
 kmeans = KMeans(K, random_state=seed)
 kmeans.fit(x)
 centers = kmeans.cluster_centers_
 
-# plt.scatter(x[:, 0], x[:, 1], c='blue', cmap=plt.cm.RdYlBu)
-# plt.scatter(centers[:, 0], centers[:, 1], c='red', marker='X', s=100, label='Cluster Centers')
-# plt.show()
-
+# -------------------------------- training ------------------------------
 models = []
 
-for a in algos:
+for a in algorithm:
     model = GMM(K, centers)
     model.fit(x, a, epochs, lr, n_slices)
     models.append(model)
 
-grid = utils.create_grid()
+# ------------------------------ visualization ---------------------------
 
-figs_models = []
-for m, a in zip(models, algos):
-    figs_models.append(utils.plot_eval(m, grid, a))
+fig, ax = plt.subplots(1, len(models) + 1, figsize=(25, 5))
 
-plt.show()
+range_lim = 4
+if dataset == 'moons': range_lim = 2
+bins = 200
+
+rang = [[-range_lim, range_lim], [-range_lim, range_lim]]
+
+ax[0].hist2d(x[:, 0], x[:, 1], range=rang, bins=bins, cmap=plt.cm.viridis)
+ax[0].set_title(f'ground truth')
+
+for i in range(len(models)):
+    samples = models[i].sample(num_samples)
+    ax[i + 1].hist2d(samples[:, 0], samples[:, 1], range=rang, bins=bins, cmap=plt.cm.viridis)
+    ax[i + 1].set_title(f'samples - {algorithm[i]}')
+
+for a in ax:
+    a.axis('off')
+
+plt.subplots_adjust(wspace=0.1) 
+plt.savefig(f"results/{dataset}/samples.png", format='png')
+
+for i in range(len(models)):
+    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+    fig.suptitle(f'{algorithm[i]}')
+    utils.plot_loss(models[i], ax[0])
+    utils.plot_logp(models[i], ax[1])
+    plt.savefig(f"results/{dataset}/{algorithm[i]}_losses.png", format='png')

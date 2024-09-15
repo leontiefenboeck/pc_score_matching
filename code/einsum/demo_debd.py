@@ -36,7 +36,7 @@ def ssm_loss(einet, x, n_slices=1):
     logp = einet(x)
     logp = EinsumNetwork.log_likelihoods(logp)
 
-    # TODO: this does not work with Categorical Array 
+    # TODO: this does not work with Categorical Array - x not used in computation graph
     score = torch.autograd.grad(logp.sum(), x, create_graph=True)[0]
     loss1 = 0.5 * (torch.norm(score, dim=-1) ** 2)
 
