@@ -132,9 +132,9 @@ def maybe_download_debd():
 def load_debd(name, dtype='int32'):
     """Load one of the twenty binary density esimtation benchmark datasets."""
 
-    maybe_download_debd()
+    # maybe_download_debd()
 
-    data_dir = 'data/debd'
+    data_dir = os.path.join('data', 'debd')
 
     train_path = os.path.join(data_dir, 'datasets', name, name + '.train.data')
     test_path = os.path.join(data_dir, 'datasets', name, name + '.test.data')
