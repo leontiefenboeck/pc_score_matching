@@ -1,20 +1,16 @@
 from gmm import GMM
 import data
 import utils
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
 from sklearn.cluster import KMeans
 
-# TODO better visualization for thesis
-
-dataset = 'spirals'
+dataset = 'board'
 algorithm = ['EM', 'SGD', 'SM', 'SSM']
-# algorithm = ['SGD']
+# algorithm = ['EM']
 
 # ----------------------------- parameters -------------------------------
 num_samples = 5000
 
-K = 30 # number of components 
+K = 50 # number of components 
 
 lr = 0.01
 epochs = 100
@@ -40,31 +36,10 @@ for a in algorithm:
 
 # ------------------------------ visualization ---------------------------
 
-fig, ax = plt.subplots(1, len(models) + 1, figsize=(25, 5))
-
-range_lim = 4
-if dataset == 'moons': range_lim = 2
 bins = 200
+range_lim = 4
 
-rang = [[-range_lim, range_lim], [-range_lim, range_lim]]
-
-ax[0].hist2d(x[:, 0], x[:, 1], range=rang, bins=bins, cmap=plt.cm.viridis)
-ax[0].set_title(f'ground truth')
-
-for i in range(len(models)):
-    samples = models[i].sample(num_samples)
-    ax[i + 1].hist2d(samples[:, 0], samples[:, 1], range=rang, bins=bins, cmap=plt.cm.viridis)
-    ax[i + 1].set_title(f'samples - {algorithm[i]}')
-
-for a in ax:
-    a.axis('off')
-
-plt.subplots_adjust(wspace=0.1) 
-plt.savefig(f"results/{dataset}/samples.png", format='png')
-
-for i in range(len(models)):
-    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
-    fig.suptitle(f'{algorithm[i]}')
-    utils.plot_loss(models[i], ax[0])
-    utils.plot_logp(models[i], ax[1])
-    plt.savefig(f"results/{dataset}/{algorithm[i]}_losses.png", format='png')
+utils.plot_data(x, dataset, bins, range_lim)
+utils.plot_density(models, dataset)
+utils.plot_samples(models, num_samples, dataset, bins, range_lim)
+utils.plot_losses(models, dataset)

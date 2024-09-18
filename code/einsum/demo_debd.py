@@ -24,7 +24,7 @@ online_em_frequency = 1
 online_em_stepsize = 0.05
 
 exponential_family = EinsumNetwork.BinomialArray
-exponential_family_args = {'N': 2}
+exponential_family_args = {'N': 1}
 
 # ----------------------------- functions -----------------------------
 def ssm_loss(einet, x, n_slices=1):

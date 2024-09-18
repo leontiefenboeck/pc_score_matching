@@ -9,6 +9,7 @@ class GMM(nn.Module):
         super(GMM, self).__init__()
         self.n_components = n_components
         self.n_features = n_features
+        self.algorithm = ''
         self.loss_curve = []
         self.logp_curve = []
 
@@ -22,8 +23,11 @@ class GMM(nn.Module):
 
     def fit(self, x, algorithm, epochs, lr, n_slices):
 
+        self.algorithm = algorithm
+        
         x = torch.tensor(x, dtype=torch.float32) 
 
+        print('\n')
         if algorithm == "EM": 
             self.EM(x, epochs)
         else: 
@@ -51,6 +55,9 @@ class GMM(nn.Module):
     
     def get_logp(self):
         return self.logp_curve
+    
+    def get_algorithm(self):
+        return self.algorithm
     
     def sample(self, num_samples):
         cat_dist = dist.Categorical(torch.softmax(self.pi, dim=-1))
@@ -88,7 +95,7 @@ class GMM(nn.Module):
             loss.backward()
             optimizer.step()
 
-            if i % (epochs / 10) == 0: print(f'[{i}]       {algorithm}-logp = {self.logp_curve[-1]}')
+            if i % (epochs / 5) == 0: print(f'[{i}]       {algorithm}-logp = {self.logp_curve[-1]}')
 
         print(f'[{epochs}]       {algorithm}-logp = {self.logp_curve[-1]}') 
 
@@ -122,10 +129,10 @@ class GMM(nn.Module):
 
         return (loss1 + loss2).mean()
 
-    def EM(self, x, epochs=100):
+    def EM(self, x, epochs):
         x = x.detach()  
         
-        for _ in range(epochs):
+        for i in range(epochs):
             log_likelihoods = torch.zeros(x.size(0), self.n_components)
 
             for k in range(self.n_components):
@@ -147,4 +154,6 @@ class GMM(nn.Module):
                 var_k = (resp[:, k] * diff.T @ diff) / resum[k]
                 self.chol_var.data[k] = torch.linalg.cholesky(var_k + 1e-6 * torch.eye(self.n_features))
 
-        print(f'EM-logp = {-torch.mean(self(x)).detach().item()}')
+            self.loss_curve.append(-torch.mean(self(x)).detach().item())
+            self.logp_curve.append(-torch.mean(self(x)).detach().item())
+            if i % (epochs / 5) == 0: print(f'[{i}]       EM-logp = {self.logp_curve[-1]}')

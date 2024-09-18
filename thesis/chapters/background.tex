@@ -40,7 +40,7 @@ task exactly and efficiently. Exactly in this case means without relying on appr
 means in linear time with respect to the model size. \\
 
 In recent years expressive capability has increased considerably through models based on neural networks like Generative-Adversarial
-Networks (GANs) \cite{gan}, Variational Autoencoder (VAE) \cite{vae} and many others. However what these models excel in for instance generating 
+Networks (GANs) \cite{gan}, Variational Autoencoder (VAE) \cite{vae} and many others. However for what these models excel in generating 
 very realistic images or compelling text in language modelling, they lack in tractability for all except the most simplest inference tasks. 
 \cite{pc_intro} \\
 
@@ -54,12 +54,13 @@ Probabilistic Circuit (PC) is an umbrella term for probabilistic models that can
 highly expressive at the same time. In general this is achieved by only introducing complexity in a structured manner. More specifically
 for a PC to be valid it has to adhere to certain structural properties, but more on that later. \\
 
-Prominent members of the PC class include .., but I will only be focusing on Sum Product Networks (SPNs) \cite{spn}, which to my 
+Prominent members of the PC class include Cutset Networks \cite{cutset}, Probabilistic
+Sentential Decision Diagrams (PSDDs) \cite{psdd}, but I will only be focusing on Sum Product Networks (SPNs) \cite{spn}, which to my 
 knowledge has seen the widest adoption. 
 
 In General one can think of a SPN as a structured neural network that consists of leaf nodes, sum nodes and product 
-nodes. A SPN then recursively computes weighted mixtures, with sum nodes, or factorizations, with product nodes, from simple input distributions (leaf nodes). 
-These inputs can basically be any probability distribution like Gaussians, Bernoullies, a Categroical distribution and so on,
+nodes. A SPN then recursively computes weighted mixtures (sum nodes) and factorizations (product nodes) of simple input distributions (leaf nodes). 
+These inputs can basically be any probability distribution like Gaussians, Bernoullies, Categroical distributions and so on,
 however most of the time we will talk about Gaussians.
 
 Considering this, one could notice that the simplest form of a SPN is just a basic 
@@ -86,6 +87,7 @@ Gaussian Mixture Model (GMM), where one sum node mixes two leaf nodes, as depict
     \caption{Simplest SPN}
     \label{fig:spn_gmm}
 \end{figure}
+Furthermore an only slightly more complex SPN with a product node and two sum node can be seen in Figure~\ref{fig:spn_layered}. 
 
 \begin{figure}[h!]
     \centering
@@ -122,16 +124,15 @@ Gaussian Mixture Model (GMM), where one sum node mixes two leaf nodes, as depict
     \label{fig:spn_layered}
 \end{figure}
 
-Furthermore an only slightly more complex SPN with a product node and two sum node can be seen in Figure~\ref{fig:spn_layered}. 
 Altough this is still very very basic it is a great starting point to intruduce and make sense of two central structural 
 properties that allows SPNs to be expressive and tractable. 
 
 In the following Definitions PC and SPN can be used interchangebly.
 
 \begin{definition}[Scope]
-    If a PC $P$ models the joint distribution of a set of variables $\xx$, each node of $P$ models a distribution over a subset of $\xx$.
+    If a PC $P$ models the joint distribution of a set of variables $\vec{X}$, each node of $P$ models a distribution over a subset of $\vec{X}$.
     This subset is called the scope of the node. For a leaf node the scope is the input variable to that leaf, for all other nodes the scope 
-    is the union of its children's scopes. So the root node always has scope $\xx$. \cite{pc_intro}
+    is the union of its children's scopes. So the root node always has scope $\vec{X}$. \cite{pc_intro}
 \end{definition}
 
 \begin{definition}[Smoothness]
@@ -145,11 +146,11 @@ In simple terms this basically means that sum nodes are only allowed to have inp
 only allowed to have inputs over different variables. The two depicted SPNs are smooth and decomposable.
 
 There are more structural properties that a SPN or PC can fullfill, however these two already guarantee tractable computation of 
-marginals (MAR) and conditionals (CON)\cite{pc_intro}, which many other models can't do and is already very useful in many scenarios. 
-Generally the more structure a PC has, which means more structural properties it must fullfill, the more inference tasks it can compute 
+marginals (MAR) and conditionals (CON)\cite{pc_intro}, which many other models cannot do and which already is quite enough in many scenarios. 
+Generally the more structure a PC has, which means more structural properties it must fulfill, the more inference tasks it can compute 
 tractably. 
 
-In \cite{pc_intro} there is in depth explanation, why these properties guarantee tractable inference 
+In \cite{pc_intro} there is an in depth explanation, why these properties guarantee tractable inference 
 and further discussion on other properties.
 
 Using a SPN in a real-world scenario then would bacisally entail first deciding on a structure (which properties and leaf 
@@ -159,8 +160,8 @@ This omptimization is usually done via Gradient Descent or the Expectation-Maxim
 which is also very popular with Gaussian Mixture Models. 
 
 It is also noteworthy here that a SPN is a normalized model, which means it models a proper density (that integrates to $1$ over the entire real space). 
-This makes the omptimization with Maximum Likelihood very straightforward as the model directly outputs the Likelihood when evaluated at one datapoint and 
-we can just minimize the negative of this output, in turn maximizing the Likelihood.
+This makes the omptimization with Maximum Likelihood very straightforward as the model directly outputs the Likelihood when evaluated at one datapoint.
+Therefore we can just minimize the negative of this output, in turn maximizing the Likelihood.
 Though normally, as with most models, we model the log-likelihood for numerical stability.
 
 
@@ -183,7 +184,7 @@ mean computing the integral over $E_\theta$.
 \end{equation}
 
 Score Matching proposes a workaround by working with the log gradient $\nabla_x \log \ p_\theta(\vec x)$ of the density, 
-instead of maximinzing $p_\theta(\vec x)$. \\
+instead of $p_\theta(\vec x)$. \\
 
 Calculating $\nabla_x \log p_\theta(\vec x)$ results in $- \nabla_x E_\theta(\vec x)$ since 
 \[\nabla_x \log p_\theta(\vec x) = \nabla_x \log \ \frac{e^{- E_\theta(\vec x)}}{Z_\theta} = \nabla_x \left( - E_\theta(\vec x) - {Z_\theta} \right) = - \nabla_x E_\theta(\vec x)\]
@@ -200,7 +201,7 @@ the scores of the data and the scores of the model, defined as
 
 as the objective function. Here $p_d$ and $s_d$ refer to the density of the data and the score of the data respectively.
 
-This objective doesn't depend on the intractable normalization function, however it depends on the score function of the data 
+This objective doesn't depend on the intractable normalization constant, however it depends on the score function of the data 
 $s_d(x)$ which is unknown. Furthermore in \cite{sm} it is shown that by partial integration this objective function can be expressed as 
 
 \begin{align}

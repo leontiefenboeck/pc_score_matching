@@ -1,45 +1,86 @@
 import torch
 import matplotlib.pyplot as plt
 
-def create_grid(x_lim = (-1.5, 2.5), y_lim = (-1, 1.5)):
-    x = torch.linspace(x_lim[0], x_lim[1], 100)
-    y = torch.linspace(y_lim[0], y_lim[1], 100)
+def create_grid(lim):
+
+    x = torch.linspace(-lim, lim, 100)
+    y = torch.linspace(-lim, lim, 100)
     X, Y = torch.meshgrid(x, y, indexing='ij')
     grid = torch.column_stack([X.flatten(), Y.flatten()])
 
     return (X, Y, grid)
 
-def plot_eval(model, grid, algorithm):
-    fig_model, ax_model = plt.subplots(2, 2, figsize=(10, 8))
-    fig_model.suptitle(algorithm)
+def plot_data(x, dataset, bins, range_lim):
 
-    plot_loss(model, ax_model[0, 0])
-    plot_logp(model, ax_model[0, 1])
-    plot_samples(model, ax_model[1, 0])
-    plot_density(model, grid, ax_model[1, 1])
+    if dataset == 'moons': range_lim = 2
+    rang = [[-range_lim, range_lim], [-range_lim, range_lim]]
 
-    return fig_model
+    plt.suptitle(f'Ground Truth')
+    plt.tick_params(left=False, bottom=False, labelleft=False, labelbottom=False)
+    plt.hist2d(x[:, 0], x[:, 1], range=rang, bins=bins, cmap=plt.cm.plasma, vmin=0, vmax=3)
 
-def plot_samples(model, ax=plt):
+    plt.savefig(f"results/{dataset}/ground_truth.png", format='png')
 
-    samples = model.sample(500)
-    ax.set_title("Samples")
-    ax.scatter(samples[:, 0], samples[:, 1])
+def plot_samples(models, num_samples, dataset, bins, range_lim):
 
-def plot_density(model, grid, ax=plt):
+    if dataset == 'moons': range_lim = 2
+    rang = [[-range_lim, range_lim], [-range_lim, range_lim]]
 
-    X, Y, grid = grid
+    fig, ax = plt.subplots(1, len(models), figsize=(len(models) * 5, 5))
+    fig.suptitle("Samples")
 
-    with torch.no_grad():
-        density = torch.exp(model(grid))
+    if len(models) == 1:
+        ax = [ax]
 
-    ax.set_title("Density")
-    ax.contour(X, Y, density.reshape(X.shape), levels=200)
+    for i in range(len(models)):
+        samples = models[i].sample(num_samples)
+        # ax[i].set_facecolor('black')
+        ax[i].set_title(f'{models[i].get_algorithm()}')
+        ax[i].tick_params(left=False, bottom=False, labelleft=False, labelbottom=False)
+        ax[i].hist2d(samples[:, 0], samples[:, 1], range=rang, bins=bins, cmap=plt.cm.plasma, vmin=0, vmax=3)
 
-def plot_loss(model, ax=plt, title='loss'):
-    ax.set_title(title)
-    ax.plot(model.get_loss())
+    plt.subplots_adjust(wspace=0.1) 
+    plt.savefig(f"results/{dataset}/samples.png", format='png')
 
-def plot_logp(model, ax=plt, title='logp'):
-    ax.set_title(title)
-    ax.plot(model.get_logp())
+def plot_density(models, dataset):
+
+    lim = 4
+    if dataset == 'moons': lim = 2
+    X, Y, grid = create_grid(lim)
+
+    fig, ax = plt.subplots(1, len(models), figsize=(len(models) * 5, 5))
+    fig.suptitle("Density")
+
+    if len(models) == 1:
+        ax = [ax]
+
+    for i in range(len(models)):
+        with torch.no_grad():
+            density = torch.exp(models[i](grid))
+
+        ax[i].set_facecolor('black')
+        ax[i].set_title(f'{models[i].get_algorithm()}')
+        ax[i].contour(X, Y, density.reshape(X.shape), levels=100, cmap=plt.cm.plasma)
+        ax[i].tick_params(left=False, bottom=False, labelleft=False, labelbottom=False)
+
+    plt.subplots_adjust(wspace=0.1) 
+    plt.savefig(f"results/{dataset}/densities.png", format='png')
+
+def plot_losses(models, dataset):
+    
+    fig, ax = plt.subplots(len(models), 2, figsize=(10, 5 * len(models)))
+    fig.suptitle('Losses vs. Logp')
+
+    if len(models) == 1:
+        ax = [ax]
+
+    for i in range(len(models)):
+        algorithm = models[i].get_algorithm()
+        ax[i][0].set_title(f'{algorithm} Loss')
+        ax[i][0].plot(models[i].get_loss())
+        ax[i][1].set_title(f'{algorithm} negative Log Likelihood')
+        ax[i][1].plot(models[i].get_logp())
+
+    plt.subplots_adjust(hspace=0.5)
+    plt.savefig(f"results/{dataset}/losses.png", format='png')
+    
