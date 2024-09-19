@@ -2,44 +2,61 @@ from gmm import GMM
 import data
 import utils
 from sklearn.cluster import KMeans
+import numpy as np
 
-dataset = 'board'
+dataset = 'spirals'
 algorithm = ['EM', 'SGD', 'SM', 'SSM']
-# algorithm = ['EM']
+
+use_best_parameters = True  # parameters after cross validation (used in thesis)
 
 # ----------------------------- parameters -------------------------------
-num_samples = 5000
+num_samples = 10000
 
-K = 50 # number of components 
+K = 50                      # number of components 
+lr = 0.01                   # learning rate
+epochs = 50                # number of training epochs
 
-lr = 0.01
-epochs = 100
-
-n_slices = 1 # how many random vectors for sliced score matching
+n_slices = 1                # how many random vectors for sliced score matching
 
 seed = 42
 
-# -------------------------------- data ----------------------------------
-x = data.get_2d(dataset, num_samples)
-
-kmeans = KMeans(K, random_state=seed)
-kmeans.fit(x)
-centers = kmeans.cluster_centers_
-
 # -------------------------------- training ------------------------------
+x = data.get_2d(dataset, num_samples * 2, seed)
+
+np.random.seed(seed) 
+np.random.shuffle(x)
+
+x_test = x[:num_samples]
+x = x[num_samples:]
+
 models = []
 
-for a in algorithm:
-    model = GMM(K, centers)
-    model.fit(x, a, epochs, lr, n_slices)
-    models.append(model)
+if use_best_parameters: 
+    for a in algorithm:
+        K, lr, epochs = utils.load_best_params(dataset, a)
+
+        kmeans = KMeans(K, random_state=seed)
+        kmeans.fit(x)
+        centers = kmeans.cluster_centers_
+
+        model = GMM(K, centers)
+        model.fit(x, a, epochs, lr, n_slices)
+        logp = model.log_likelihood(x_test)
+        print(f'[{a}] Log Likelihood = {logp}')
+        models.append(model)
+
+else: 
+
+    kmeans = KMeans(K, random_state=seed)
+    kmeans.fit(x)
+    centers = kmeans.cluster_centers_
+
+    for a in algorithm:
+        model = GMM(K, centers)
+        model.fit(x, a, epochs, lr, n_slices)
+        models.append(model)
 
 # ------------------------------ visualization ---------------------------
-
-bins = 200
-range_lim = 4
-
-utils.plot_data(x, dataset, bins, range_lim)
-utils.plot_density(models, dataset)
-utils.plot_samples(models, num_samples, dataset, bins, range_lim)
+utils.plot_data(x, dataset)
+utils.plot_density_and_samples(models, dataset)
 utils.plot_losses(models, dataset)

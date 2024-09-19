@@ -5,38 +5,40 @@ import torch.autograd as autograd
 
 class GMM(nn.Module):
 
-    def __init__(self, n_components, means_init=0, n_features=2):
+    def __init__(self, K, means_init=0, n_features=2):
         super(GMM, self).__init__()
-        self.n_components = n_components
+        self.K = K
         self.n_features = n_features
         self.algorithm = ''
         self.loss_curve = []
-        self.logp_curve = []
+        self.negative_logp_curve = []
 
         if means_init.any(): 
             self.means = nn.Parameter(torch.tensor(means_init))
         else:
             self.means = nn.Parameter(torch.rand(means_init))
 
-        self.chol_var = nn.Parameter(torch.eye(n_features).repeat(n_components, 1, 1))
-        self.pi = nn.Parameter(torch.ones(n_components) / n_components)
+        self.chol_var = nn.Parameter(torch.eye(n_features).repeat(K, 1, 1))
+        self.pi = nn.Parameter(torch.ones(K) / K)
 
-    def fit(self, x, algorithm, epochs, lr, n_slices):
+    def fit(self, x, algorithm, epochs, lr, n_slices=1):
 
         self.algorithm = algorithm
+        self.epochs = epochs
+        self.lr = lr
+        self.n_slices = n_slices
         
         x = torch.tensor(x, dtype=torch.float32) 
 
-        print('\n')
         if algorithm == "EM": 
             self.EM(x, epochs)
         else: 
             self.train_torch(x, algorithm, epochs, lr, n_slices)
 
     def forward(self, x):
-        log_likelihoods = torch.zeros(x.size(0), self.n_components)
+        log_likelihoods = torch.zeros(x.size(0), self.K)
 
-        for k in range(self.n_components):
+        for k in range(self.K):
             lower_triangular = torch.tril(self.chol_var[k])
             var_k = lower_triangular @ lower_triangular.t() + 1e-6 * torch.eye(self.n_features)
             log_probs = dist.MultivariateNormal(self.means[k], var_k).log_prob(x)
@@ -48,23 +50,33 @@ class GMM(nn.Module):
         return log_likelihood
     
     def log_likelihood(self, x):
-        return -torch.mean(self(x)).detach().item()
+        with torch.no_grad():
+            if not isinstance(x, torch.Tensor):
+                x = torch.tensor(x)
+            self.ll = torch.mean(self(x)).item()
+            return self.ll
+        
+    def get_ll(self):
+        return self.ll
     
     def get_loss(self):
         return self.loss_curve
     
     def get_logp(self):
-        return self.logp_curve
+        return self.negative_logp_curve
     
     def get_algorithm(self):
         return self.algorithm
+    
+    def get_hyperparams(self):
+        return self.K, self.lr, self.epochs
     
     def sample(self, num_samples):
         cat_dist = dist.Categorical(torch.softmax(self.pi, dim=-1))
         component_indices = cat_dist.sample((num_samples,))
 
         samples = torch.zeros(num_samples, self.n_features)
-        for k in range(self.n_components): 
+        for k in range(self.K): 
             mask = (component_indices == k)
             num_component_samples = mask.sum()
             
@@ -75,7 +87,7 @@ class GMM(nn.Module):
 
         return samples
     
-    def train_torch(self, x, algorithm, epochs, lr, n_slices=1):
+    def train_torch(self, x, algorithm, epochs, lr, n_slices):
         optimizer = torch.optim.Adam(self.parameters(), lr=lr)
 
         x.requires_grad_()
@@ -89,15 +101,26 @@ class GMM(nn.Module):
                 loss = self.sm_loss(x)
 
             self.loss_curve.append(loss.item())
-            self.logp_curve.append(-torch.mean(self(x)).detach().item())
+            self.negative_logp_curve.append(-self.log_likelihood(x))
                 
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
-            if i % (epochs / 5) == 0: print(f'[{i}]       {algorithm}-logp = {self.logp_curve[-1]}')
+            # if i % (epochs / 5) == 0: print(f'[{i}]       {algorithm}-logp = {self.negative_logp_curve[-1]}')
 
-        print(f'[{epochs}]       {algorithm}-logp = {self.logp_curve[-1]}') 
+        # compute final loss and logp 
+        if algorithm == "SGD":
+            loss = -torch.mean(self(x))
+        if algorithm == "SSM":
+            loss = self.ssm_loss(x, n_slices)
+        if algorithm == "SM":
+            loss = self.sm_loss(x)
+
+        self.loss_curve.append(loss.item())
+        self.negative_logp_curve.append(-self.log_likelihood(x))
+
+        # print(f'[{epochs}]       {algorithm}-logp = {self.negative_logp_curve[-1]}') 
 
     def sm_loss(self, x):
 
@@ -133,9 +156,13 @@ class GMM(nn.Module):
         x = x.detach()  
         
         for i in range(epochs):
-            log_likelihoods = torch.zeros(x.size(0), self.n_components)
+            negative_logp = -self.log_likelihood(x)
+            self.loss_curve.append(negative_logp)
+            self.negative_logp_curve.append(negative_logp)
 
-            for k in range(self.n_components):
+            log_likelihoods = torch.zeros(x.size(0), self.K)
+
+            for k in range(self.K):
                 var_k = self.chol_var[k] @ self.chol_var[k].t() + 1e-6 * torch.eye(self.n_features)
                 mvn = dist.MultivariateNormal(self.means[k], var_k)
                 log_likelihoods[:, k] = mvn.log_prob(x)
@@ -149,11 +176,15 @@ class GMM(nn.Module):
             self.means.data = resp.T @ x / resum.unsqueeze(1)
             self.pi.data = resum / x.size(0)
 
-            for k in range(self.n_components):
+            for k in range(self.K):
                 diff = x - self.means[k]
                 var_k = (resp[:, k] * diff.T @ diff) / resum[k]
                 self.chol_var.data[k] = torch.linalg.cholesky(var_k + 1e-6 * torch.eye(self.n_features))
 
-            self.loss_curve.append(-torch.mean(self(x)).detach().item())
-            self.logp_curve.append(-torch.mean(self(x)).detach().item())
-            if i % (epochs / 5) == 0: print(f'[{i}]       EM-logp = {self.logp_curve[-1]}')
+            # if i % (epochs / 5) == 0: print(f'[{i}]       EM-logp = {self.negative_logp_curve[-1]}')
+
+        negative_logp = -self.log_likelihood(x)
+        self.loss_curve.append(negative_logp)
+        self.negative_logp_curve.append(negative_logp)
+
+        # print(f'[{epochs}]       EM-logp = {self.negative_logp_curve[-1]}') 
