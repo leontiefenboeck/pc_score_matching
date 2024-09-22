@@ -7,7 +7,8 @@ import utils
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-algorithms = ['SSM', 'SGD', 'EM']
+algorithms = ['SSM', 'SGD']
+algorithms = ['EM']
 
 # ------------------------ constants -------------------------------
 exponential_family = EinsumNetwork.BinomialArray
@@ -15,9 +16,11 @@ exponential_family_args = {'N': 255}
 
 classes = [7]
 
-K = 10
+n_slices = 1
 
-structure = 'poon-domingos'
+K = 10
+learning_rate = 0.4
+num_epochs = 10
 
 # 'poon-domingos'
 pd_num_pieces = [4]
@@ -26,12 +29,6 @@ pd_num_pieces = [4]
 width = 28
 height = 28
 
-# 'binary-trees'
-depth = 3
-num_repetitions = 20
-
-learning_rate = 0.1
-num_epochs = 10
 batch_size = 100
 online_em_frequency = 1
 online_em_stepsize = 0.05
@@ -85,11 +82,8 @@ def get_data():
 
 train_x, valid_x, test_x = get_data()
 
-if structure == 'poon-domingos':
-    pd_delta = [[height / d, width / d] for d in pd_num_pieces]
-    graph = Graph.poon_domingos_structure(shape=(height, width), delta=pd_delta)
-elif structure == 'binary-trees':
-    graph = Graph.random_binary_trees(num_var=train_x.shape[1], depth=depth, num_repetitions=num_repetitions)
+pd_delta = [[height / d, width / d] for d in pd_num_pieces]
+graph = Graph.poon_domingos_structure(shape=(height, width), delta=pd_delta)
 
 for a in algorithms:
 
@@ -117,21 +111,22 @@ for a in algorithms:
     test_N = test_x.shape[0]
 
     optimizer = torch.optim.Adam(einet.parameters(), lr=learning_rate)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 2, 0.5)
 
     for epoch_count in range(num_epochs):
 
-        ##### evaluate
-        # einet.eval()
-        # train_ll = EinsumNetwork.eval_loglikelihood_batched(einet, train_x, batch_size=batch_size)
-        # valid_ll = EinsumNetwork.eval_loglikelihood_batched(einet, valid_x, batch_size=batch_size)
-        # test_ll = EinsumNetwork.eval_loglikelihood_batched(einet, test_x, batch_size=batch_size)
-        # print("[{}]   train LL {}   valid LL {}   test LL {}".format(
-        #     epoch_count,
-        #     train_ll / train_N,
-        #     valid_ll / valid_N,
-        #     test_ll / test_N))
-        # einet.train()
-        #####
+        #### evaluate
+        einet.eval()
+        train_ll = EinsumNetwork.eval_loglikelihood_batched(einet, train_x, batch_size=batch_size)
+        valid_ll = EinsumNetwork.eval_loglikelihood_batched(einet, valid_x, batch_size=batch_size)
+        test_ll = EinsumNetwork.eval_loglikelihood_batched(einet, test_x, batch_size=batch_size)
+        print("[{}]   train LL {}   valid LL {}   test LL {}".format(
+            epoch_count,
+            train_ll / train_N,
+            valid_ll / valid_N,
+            test_ll / test_N))
+        einet.train()
+        ####
 
         idx_batches = torch.randperm(train_N, device=device).split(batch_size)
 
@@ -147,12 +142,16 @@ for a in algorithms:
                 optimizer.zero_grad()
 
                 if a == 'SSM':
-                    loss = ssm_loss(einet, batch_x)
+                    loss = ssm_loss(einet, batch_x, n_slices)
                 if a == 'SGD':
                     loss = -torch.mean(EinsumNetwork.log_likelihoods(einet.forward(batch_x)))
 
+
                 loss.backward()
+                torch.nn.utils.clip_grad_norm_(einet.parameters(), max_norm=1.0)
                 optimizer.step()
+
+        scheduler.step()
             
         if a == 'EM': einet.em_update()
 
@@ -160,14 +159,14 @@ for a in algorithms:
     #####################
 
     model_dir = 'models/einet/demo_mnist/'
-    samples_dir = 'results/demo_mnist/'
+    samples_dir = 'results/'
 
     utils.mkdir_p(model_dir)
     utils.mkdir_p(samples_dir)
 
     samples = einet.sample(num_samples=25).cpu().numpy()
     samples = samples.reshape((-1, 28, 28))
-    utils.save_image_stack(samples, 5, 5, os.path.join(samples_dir, f"samples_{a}.png"), margin_gray_val=0.)
+    utils.save_image_stack(samples, 5, 5, os.path.join(samples_dir, f"mnist_{a}.png"), margin_gray_val=0.)
 
     print(f'{a}-logp = {EinsumNetwork.eval_loglikelihood_batched(einet, test_x, batch_size=batch_size) / test_N}')
 

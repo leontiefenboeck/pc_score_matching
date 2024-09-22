@@ -1,0 +1,67 @@
+mnist
+
+K = 10
+learning_rate = 0.1
+num_epochs = 10
+
+SSM-logp = -20632.13539640078
+SGD-logp = -21646.078398589496
+EM-logp = -11692.862566877431
+
+K = 10
+learning_rate = 0.1
+num_epochs = 20
+
+SSM-logp = -19270.417771157587
+SGD-logp = -15655.878647859921
+EM-logp = -11634.888633876459
+
+K = 10
+learning_rate = 0.01
+num_epochs = 20
+
+SSM-logp = -64613.870500972764
+SGD-logp = -64486.829158560315
+EM-logp = -11644.741336332685
+
+K = 10
+learning_rate = 0.01
+num_epochs = 100
+
+SSM-logp = -22397.687925583657
+
+
+K = 5
+learning_rate = 0.1
+num_epochs = 10
+SSM-logp = -22875.060888861866
+SGD-logp = -23675.765017023346
+EM-logp = -14560.84159168288
+
+
+K = 20
+learning_rate = 0.1
+num_epochs = 10
+SSM-logp = -20117.017752918287
+SGD-logp = -20618.39597519455
+EM-logp = -10012.59042132782
+
+
+K = 50
+learning_rate = 0.1
+num_epochs = 10
+
+SSM-logp = -19665.96637889105
+SGD-logp = -20180.21966196498
+EM-logp = -9695.092351653697
+
+
+
+K = 10
+
+num_epochs = 10
+EM-logp = -11643.09986016537
+
+learning_rate = 0.1
+num_epochs = 60
+SGD-logp = -12521.13609557393
