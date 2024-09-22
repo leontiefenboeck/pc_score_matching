@@ -4,8 +4,8 @@ import utils
 from sklearn.cluster import KMeans
 import numpy as np
 
-dataset = 'spirals'
-algorithm = 'SM'
+dataset = 'board'
+algorithm = 'EM'
 
 # ----------------------------- parameters -------------------------------
 num_samples = 10000
@@ -13,12 +13,12 @@ num_samples = 10000
 if dataset == 'moons':
     Ks = [8, 12, 14]  
 if dataset == 'spirals':
-    Ks = [30]      
+    Ks = [30, 40, 50]      
 if dataset == 'board':
     Ks = [60, 80, 100]     
 
-lr = [0.01]
-epochs = [300]
+lr = [0.1, 0.01]
+epochs = [50, 100, 200]
 
 seed = 42
 

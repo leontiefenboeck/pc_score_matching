@@ -4,17 +4,18 @@ import utils
 from sklearn.cluster import KMeans
 import numpy as np
 
-dataset = 'spirals'
+dataset = 'board'
 algorithm = ['EM', 'SGD', 'SM', 'SSM']
+# falgorithm = ['SM']
 
 use_best_parameters = True  # parameters after cross validation (used in thesis)
 
 # ----------------------------- parameters -------------------------------
 num_samples = 10000
 
-K = 50                      # number of components 
+K = 100                      # number of components 
 lr = 0.01                   # learning rate
-epochs = 50                # number of training epochs
+epochs = 200                # number of training epochs
 
 n_slices = 1                # how many random vectors for sliced score matching
 
@@ -41,8 +42,6 @@ if use_best_parameters:
 
         model = GMM(K, centers)
         model.fit(x, a, epochs, lr, n_slices)
-        logp = model.log_likelihood(x_test)
-        print(f'[{a}] Log Likelihood = {logp}')
         models.append(model)
 
 else: 
@@ -54,9 +53,16 @@ else:
     for a in algorithm:
         model = GMM(K, centers)
         model.fit(x, a, epochs, lr, n_slices)
+
         models.append(model)
+
+# ------------------------------ eval ------------------------------------
+for m in models:
+    logp = m.log_likelihood(x_test)
+    print(f'[{m.get_algorithm()}] Log Likelihood = {logp}')
 
 # ------------------------------ visualization ---------------------------
 utils.plot_data(x, dataset)
+utils.plot_logp(models, dataset)
 utils.plot_density_and_samples(models, dataset)
 utils.plot_losses(models, dataset)

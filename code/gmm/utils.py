@@ -59,16 +59,21 @@ def create_grid(lim):
 
 def plot_data(x, dataset):
 
-    bins = 100
-    lim = 4
-
-    if dataset == 'moons': lim = 2
-    hist_range = [[-lim, lim], [-lim, lim]]
-
     plt.tick_params(left=False, bottom=False, labelleft=False, labelbottom=False)
-    plt.hist2d(x[:, 0], x[:, 1], range=hist_range, bins=bins, cmap=plt.cm.inferno)
+    plt.figure(figsize=(9, 6))
 
-    plt.tight_layout()
+    plt.scatter(x[:, 0], x[:, 1], 
+                c='dodgerblue',    # Set point color
+                s=20,              # Set point size
+                alpha=0.7,         # Add transparency to points
+                edgecolor='k',      # Black edge for contrast
+                linewidth=0.1)      # Thin edge
+    
+    # Remove ticks and labels as per original
+    plt.tick_params(left=False, bottom=False, labelleft=False, labelbottom=False)
+    plt.grid(True, which='both', linestyle='--', linewidth=0.5, alpha=0.7)
+    plt.axis('off')
+
     plt.savefig(f"results/{dataset}/ground_truth.png", format='png')
 
 def plot_density_and_samples(models, dataset):
@@ -131,3 +136,16 @@ def plot_losses(models, dataset):
     plt.subplots_adjust(hspace=0.5)
     plt.savefig(f"results/{dataset}/losses.png", format='png')
     
+def plot_logp(models, dataset):
+    fig, ax = plt.subplots(1, len(models), figsize=(5 * len(models), 3))
+
+    if len(models) == 1:
+        ax = [ax]
+
+    for i in range(len(models)):
+        algorithm = models[i].get_algorithm()
+        ax[i].set_title(f'{algorithm}')
+        ax[i].plot(models[i].get_logp())
+
+    plt.subplots_adjust(hspace=0.5)
+    plt.savefig(f"results/{dataset}/logp.png", format='png')

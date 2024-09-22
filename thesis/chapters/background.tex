@@ -27,9 +27,12 @@ We would call a framework, that models the joint distribution a Generative Proba
 After \emph{learning} this model trough the data, which is usually done via Maximum Likelihood Estimation, we can again perform inference using the rules 
 of probability theory. And if the model approximates the true distribution close enough we can expect reliable results. \cite{pc_intro}. \\
 
+TODO: explain MLE shortly
 
 Before continuing with different approaches to probabilistic modelling, I want to introduce two key concepts that are often 
 used to discuss these different methods. \\
+
+TODO: expressiveness as in expressive efficiency
 
 Definition 1: Expressiveness - a probabilistic model is called expressive if the learned distribution approximates the original distribution to a high degree.
 For instance this can be measured with Kullback-Leibler (KL) divergence \cite{kl_divergence}, which measures how similar two probability distributions are. 
@@ -168,6 +171,8 @@ Though normally, as with most models, we model the log-likelihood for numerical 
 \section{Score Matching}
 \label{sec:sm}
 
+TODO: change notatioon of p and s
+
 Score Matching \cite{sm} is a concept that is normally used when dealing with unnormalized models like Energy Based Models (EBMs). Here 
 Energy typically just refurs to an unnormalized density. It is noteworthy, that most models represent unnormalized densities, 
 because usually there is not a straightforward way to ensure that the model outputs a proper density.
@@ -215,6 +220,8 @@ trace (sum of the diagonals) of the hessian matrix.
 
 \section{Sliced Score Matching}
 \label{sec:ssm}
+
+TODO: change notatioon of p and s
 
 While Score Matching get's rid of the normalization constant $Z_\theta$ as seen above, it introduces another term that can become hard
 to compute. To calculate the trace of the hessian in Equation \ref{eq:sm_objective} one derivation needs to be computed for each diagonal element of the hessian.

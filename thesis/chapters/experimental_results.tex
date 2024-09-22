@@ -1,4 +1,53 @@
 \chapter{Experimental Results}
 \label{cha:experimental_results}
 
-\section{Dataset}
+\section{2D Density Esitmation}
+
+For the GMM I used three functions that generate two dimensional data in some specific pattern with some added random noise. These 
+can be seen as the true data generating distribution and the goal is to model this distribution using the GMM with the discussed 
+algorithms. 
+
+Using these I generated 20,000 datapoints and split them evenly into a train and a test dataset. Note that usually the test dataset is smaller 
+than the training dataset due to limited data availability but since we can basically generate unlimited samples if we know 
+the data generating distribution, I decided to split them in this way. 
+The training samples can be seen in Figure \ref{fig:2d_datasets}.
+
+\begin{figure}[h]
+    \centering
+    \makebox[\textwidth][c]{\includegraphics[width=1.2\textwidth]{figures/datasets.png}}
+    \caption{2D Samples for all three distributions}
+    \label{fig:2d_datasets}
+\end{figure}
+
+
+
+\begin{figure}[h]
+    \centering
+    \makebox[\textwidth][c]{\includegraphics[width=1.2\textwidth]{figures/moons_best_ds.png}}
+    \caption{Densities and Samples for "Halfmoons" with best hyperparameters for each algorithm}
+    \label{fig:moons_best}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \makebox[\textwidth][c]{\includegraphics[width=1.2\textwidth]{figures/spirals_best_ds.png}}
+    \label{fig:spirals_best}
+    \caption{Densities and samples for "Spirals" with best hyperparameters for each algorithm}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \makebox[\textwidth][c]{\includegraphics[width=1.2\textwidth]{figures/board_best_ds.png}}
+    \label{fig:board_best}
+    \caption{Densities and samples for "Board" with best hyperparameters for each algorithm}
+\end{figure}
+
+
+% \section{High Dimensional Density Estimation}
+
+% \subsection{Datasets}
+
+% \subsection{Results}
+
+
+

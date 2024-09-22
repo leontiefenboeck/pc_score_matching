@@ -12,7 +12,7 @@ def center(data):
 def get_2d(dataset, n_samples, seed=42):
     z = torch.randn(n_samples, 2)
 
-    if dataset == 'moons':
+    if dataset == 'halfmoons':
         data, target = make_moons(n_samples=n_samples, noise=0.1, random_state=seed)
         return center(data)
 

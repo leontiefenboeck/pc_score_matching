@@ -1,8 +1,136 @@
+\renewcommand{\vec}[1]{\textbf{#1}}
+
 \chapter{Methods}
 \label{cha:methods}
 
-In this thesis I try to address the concerns discussed in the Introduction by learning 
-Probabilistic Circuits through novel ways, specifically Score Matching and Sliced Score Matching, which 
-to my knowledge hasn't been done before. After that I compare results from these methods with results from convential methods to train PCs.
+In this thesis I try to address the concerns discussed in the introduction by training 
+Probabilistic Circuits (PCs) through novel ways, specifically Score Matching (SM) and Sliced Score Matching (SSM).
+Then I compare results from these methods with results from convential methods to train PCs.\\
 
-\section{}
+\section{Creating a simple PC}
+\label{sec:simple_pc}
+
+Recall from section \ref{sec:pc} that the simplest variant a PC computes the weighted sum of arbitrary many input distributions. This is 
+called a Mixture Model and the graph of an example with just two input distributions is shown in Figure \ref{fig:spn_gmm}. 
+
+If the input distributions are Gaussian then it would be called a Gaussian Mixture Model and the expression to calculate the 
+modelled density would be the following: 
+
+\begin{equation}
+    p(\vec x) =  \prod_{s=1}^S \sum_{k=1}^K \pi_k \mathcal{N}(\vec x_s|\boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k) \\
+    \label{eq:gmm}
+\end{equation}
+
+Where $S$ is the number of samples, $K$ is the number of components (distributions), $\pi_k$ the mixture weights and $\mathcal{N}(\vec x_s|\boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k)$ 
+a Gaussian component with mean $\boldsymbol{\mu}_k$ and covariance matrix $\boldsymbol{\Sigma}_k$.
+
+However since we need to model the log-density $\log p(\vec x)$ for numerical stability we need to take the log of expression \ref{eq:gmm}: 
+
+\begin{align}
+    \log p(\vec x) & = \log \left(\prod_{s=1}^S \sum_{k=1}^K \pi_k \mathcal{N}(\vec x_s|\boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k)\right) \notag \\
+    & =  \sum_{s=1}^S \log \left(\sum_{k=1}^K \pi_k \mathcal{N}(\vec x_s|\boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k)\right) 
+    \label{eq:gmm_logp}
+\end{align}
+
+Here the problem arises that calculating $\sum_{k=1}^K \pi_k \mathcal{N}(\vec x_s|\boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k)$ can 
+produce very small values and when taking the logarithm this can lead to numerical instability but it can be mitigated with the LogSumExp trick.
+First we take the exponential of the logarithm of the term inside the second sum. 
+
+\begin{align}
+    & \sum_{k=1}^K \exp\left( \log \left( \pi_k \mathcal{N}(\vec x_s|\boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k) \right)\right) = \notag \\ 
+    & \sum_{k=1}^K \exp\left( \log (\pi_k) + \log (\mathcal{N}(\vec x_s|\boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k))\right)
+    \label{eq:log_exp}
+\end{align}
+
+This is valid, because $\exp (\log(x)) = x$, since exponential and logarithm cancel each other out.
+Plugging \ref{eq:log_exp} back into Equation \ref{eq:gmm_logp} yields the final numerically stable log density for our model. 
+
+\begin{equation}
+    \log p(\vec x) = \sum_{s=1}^S \log \sum_{k=1}^K \exp\left( \log \pi_k + \log \mathcal{N}(\vec x_s|\boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k)\right)
+    \label{eq:gmm_logp_final}
+\end{equation}
+
+I implemented this expression in python and used pytorch's torch.distributions.MultivariateNormal to compute the log density of a single 
+gaussian component $\mathcal{N}(\vec x_s|\boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k)$ and torch.logsumexp to calculate $\log \sum_{k=1}^K \exp()$.
+
+Now to train this model on some data we need to formulate a objective function and the corresponding optimization problem. In the conventional way of Maximum Likelihood Estimation
+(MLE) this is quite straight forward, since the objective function is exactly the density or in our case log density function 
+$\log p(\vec x)$ and the optimisation problem is formulated as the following: 
+
+\begin{equation}
+    \max_{\substack{\boldsymbol \pi, \boldsymbol \mu, \boldsymbol \Sigma}} \log p(\vec x) = \sum_{s=1}^S \log \sum_{k=1}^K \exp\left( \log \pi_k + \log \mathcal{N}(\vec x_s;\boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k)\right)
+    \label{eq:gmm_objective}
+\end{equation}
+
+In plain text this means maximizing $\log p(\vec x)$ with respect to the weights $\boldsymbol \pi$, the means $\boldsymbol \mu$ and the covariance matrices $\boldsymbol \Sigma$.
+
+I implemented the optimization of this objective with Expectation Maximization (EM) and Gradient Descent using pytorch's 
+automatic differentiation capabilities. 
+Note that for Gradient Descent to work we instead need to minimize the negative log likelihood $- \log p(\vec x)$, 
+but this yields the same results as maximizing the log likelihood.
+
+\section{Training via Score Matching}
+\label{sec:gmm_score_matching}
+
+To train the simple PC from above using Score Matching recall 
+the objective function \ref{eq:sm_objective} from Section \ref{sec:sm}. 
+With it we can formulate the optimization problem: 
+
+\begin{equation}
+    \max_{\substack{\boldsymbol \theta}} \mathcal{J}(\theta) = \mathbb{E}_{p_d(x)} \left[\text{tr} \left( \nabla_x^2 \log p_\theta(x) \right) + \frac{1}{2} \left\| \nabla_x \log p_\theta(x) \right\|^2 \right]
+    \label{eq:sm_optimization_problem}
+\end{equation}
+
+Here $\log p_m(.;\theta)$ is of course the log density of our model as described in \ref{eq:gmm_logp_final}. \\
+I used pytorch for the optimization with Gradient Descent. \\
+
+The exact step-by-step way I calculated $\mathcal{J}(\theta)$ can be seen in Algorithm \ref{alg:sm}.
+
+\begin{algorithm}
+    \caption{Score Matching}
+    \label{alg:sm}
+    \begin{algorithmic}[1]  
+        \Require $\log p_m(.;\theta), \vec x$
+        \State $s_m(\vec x; \theta) \gets \nabla_x \log p_m(\vec x;\theta), \vec x$
+        \State $\mathcal{J} \gets x$
+        \State \Return $\mathcal{J}$
+    \end{algorithmic}
+\end{algorithm}
+
+
+To calculate the gradients as in $\text{grad}(\log p_m(\vec x;\theta), \vec x)$ I used torch.autograd.grad. 
+
+
+\section{Training via Sliced Score Matching}
+
+Similar to Section \ref{sec:gmm_score_matching} we take the objective function \ref{eq:ssm_vr} from Section \ref{sec:ssm} and formulate
+the optimization problem:
+
+\begin{equation}
+    \min_{\substack{\boldsymbol \theta}}  \mathcal{J}(\theta; p_\vec{v}) = \mathbb{E}_{p_v} \mathbb{E}_{p_d} \left[ \vec{v}^T \nabla_\vec{x} s_\theta(\vec{x}) \vec{v} + \frac{1}{2} \norm{ s_\theta(\vec{x}) }^2_2 \right]
+    \label{eq:ssm_optimization_problem}
+\end{equation}
+
+I again used pytorch for optimization with Gradient Descent and the exact computation of $\mathcal{J}(\theta; p_\vec{v})$ can be seen 
+in Algorithm \ref{alg:ssm}.
+
+\begin{algorithm}
+    \caption{Sliced Score Matching}
+    \label{alg:ssm}
+    \begin{algorithmic}[1]  
+        \Require $\log p_m(.;\theta), \vec x$
+        \State $s_m(\vec x; \theta) \gets \nabla_x \log p_m(\vec x;\theta), \vec x$
+        \State $\mathcal{J} \gets x$
+        \State \Return $\mathcal{J}$
+    \end{algorithmic}
+\end{algorithm}
+
+\section{Using more complex PCs}
+
+While the model proposed in Section \ref{sec:simple_pc} works well for relatively simple tasks like 2 dimensional density estimation 
+with not too complex distributions, it doesn't perform very well with complex higher dimensional data like images. 
+
+So to get a wider variety of results I decided to also use a state-of-the-art framework for Probabilistic Circuits called 
+EinsumNetworks \cite{einsum} for modelling more complex higher dimensional datasets, especially images. 
+
+For more details on how EinsumNetworks work please refer to the \cite{einsum} but in principle 
