@@ -14,7 +14,7 @@ algorithms = ['EM']
 exponential_family = EinsumNetwork.BinomialArray
 exponential_family_args = {'N': 255}
 
-classes = [7]
+classes = [7, 8]
 
 n_slices = 1
 
@@ -174,4 +174,4 @@ for a in algorithms:
 # ground truth
 ground_truth = test_x[0:25, :].cpu().numpy()
 ground_truth = ground_truth.reshape((-1, 28, 28))
-utils.save_image_stack(ground_truth, 5, 5, os.path.join(samples_dir, "ground_truth.png"), margin_gray_val=0.)
+utils.save_image_stack(ground_truth, 5, 5, os.path.join(samples_dir, "mnist_ground_truth.png"), margin_gray_val=0.)
