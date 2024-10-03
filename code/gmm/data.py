@@ -1,6 +1,5 @@
 from sklearn.datasets import make_moons
 import torch
-import numpy as np
 
 def center(data):
 

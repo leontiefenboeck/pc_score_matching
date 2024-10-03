@@ -1,4 +1,5 @@
 import torch
+import torch.autograd as autograd
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -6,33 +7,91 @@ import seaborn as sns
 import os 
 import json
 
-def save_best_params(dataset, algorithm, best_params):
+def sm_loss(model, x):
+    x.requires_grad_()
+
+    logp = model(x).sum()
+
+    score = autograd.grad(logp, x, create_graph=True)[0]
+    loss1 = 0.5 * torch.norm(score, dim=-1) ** 2
+    
+    trace = torch.ones_like(loss1)
+    for i in range(x.size(1)):
+        trace += autograd.grad(score[:, i].sum(), x, create_graph=True)[0][:, i]
+    
+    loss = torch.mean(loss1 + trace)
+    return loss
+    
+def ssm_loss(model, x, n_slices):
+    x.requires_grad_()
+
+    x = x.unsqueeze(0).expand(n_slices, *x.shape).contiguous().view(-1, *x.shape[1:])
+
+    v = torch.randn_like(x).to(x.device)
+
+    logp = model(x).sum()
+
+    score = autograd.grad(logp, x, create_graph=True)[0]
+    loss1 = 0.5 * (torch.norm(score, dim=-1) ** 2)
+
+    grad2 = torch.autograd.grad(torch.sum(score * v), x, create_graph=True)[0]
+    loss2 = torch.sum(v * grad2, dim=-1)
+
+    return (loss1 + loss2).mean()
+
+def train(model, x, algorithm, lr, epochs, n_slices):
+
+    logps = []
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)  
+
+    for i in range(epochs):
+
+        logps.append(-model.log_likelihood(x))
+
+        if algorithm == 'EM':
+            model.EM_step(x)
+        else: 
+            if algorithm == "SGD":
+                loss = -torch.mean(model(x))
+            if algorithm == "SSM":
+                loss = ssm_loss(model, x, n_slices)
+            if algorithm == "SM":
+                loss = sm_loss(model, x)
+     
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+        # if i % (epochs / 5) == 0: print(f'[{algorithm:{3}}]   [{i:{3}}] Train Log-Likelihood = {logps[-1]:.4f}')
+
+    logps.append(-model.log_likelihood(x))
+    # print(f'[{algorithm:{3}}]   [{epochs:{3}}] Train Log-Likelihood = {logps[-1]:.4f}')
+
+    return logps
+
+def save_best_params(dataset, algorithm, K, best_params):
     
     filename='best_params.json'
     
-    # Check if the file exists
     if os.path.exists(filename):
         with open(filename, 'r') as f:
             data = json.load(f)
     else:
         data = {}
 
-    if dataset not in data:
-        data[dataset] = {}
+    if dataset not in data: data[dataset] = {}
+    if str(K) not in data[dataset]: data[dataset][str(K)] = {}
     
-    # Store the best parameters and score for the given algorithm
-    data[dataset][algorithm] = {
-        'K': best_params['K'],
+    data[dataset][str(K)][algorithm] = {
         'lr': best_params['lr'],
         'epochs': best_params['epochs'],
         'll': best_params['ll']
     }
     
-    # Save back to the file
     with open(filename, 'w') as f:
         json.dump(data, f, indent=4)
 
-def load_best_params(dataset, algorithm):
+def load_best_params(dataset, algorithm, K):
 
     filename = 'best_params.json'
 
@@ -41,14 +100,10 @@ def load_best_params(dataset, algorithm):
     
     with open(filename, 'r') as f:
         data = json.load(f)
-    
-    # Check if the dataset and algorithm exist in the file
-    if dataset not in data or algorithm not in data[dataset]:
-        raise ValueError(f"No parameters found for dataset: {dataset}, algorithm: {algorithm}")
-    
-    best_params = data[dataset][algorithm]
 
-    return best_params['K'], best_params['lr'], best_params['epochs']
+    best_params = data[dataset][str(K)][algorithm]
+
+    return best_params['lr'], best_params['epochs']
 
 def create_grid(lim):
 
@@ -77,12 +132,12 @@ def plot_data(x, dataset):
 
     plt.savefig(f"results/{dataset}/data.png", format='png')
 
-def plot_density_and_samples(experiments, dataset):
+def plot_density_and_samples(experiments, dataset, K):
 
     bins = 100
     lim = 4
 
-    if dataset == 'moons': lim = 2
+    if dataset == 'halfmoons': lim = 2
     hist_range = [[-lim, lim], [-lim, lim]]
 
     X, Y, grid = create_grid(lim)
@@ -110,16 +165,17 @@ def plot_density_and_samples(experiments, dataset):
         ax[1, i].hist2d(samples.cpu()[:, 0], samples.cpu()[:, 1], range=hist_range, bins=bins, cmap=plt.cm.inferno)
         ax[1, i].tick_params(left=False, bottom=False, labelleft=False, labelbottom=False)
 
-        ax[1, i].set_xlabel(f'K = {K}, lr = {lr}, epochs = {epochs}', fontsize=14, labelpad=10, fontweight='bold')
+        ax[1, i].set_xlabel(f'lr = {lr}, epochs = {epochs}', fontsize=14, labelpad=10, fontweight='bold')
 
     # Set titles for the rows
     fig.text(0.09, 0.70, 'Densities', va='center', rotation='vertical', fontsize=25, fontweight='bold')
     fig.text(0.09, 0.30, 'Samples', va='center', rotation='vertical', fontsize=25, fontweight='bold')
 
     plt.subplots_adjust(wspace=0.001, hspace=0.001)
-    plt.savefig(f"results/{dataset}/density_and_samples.png", format='png')
+    if not os.path.exists(f'results/{dataset}/'): os.makedirs(f'results/{dataset}/')
+    plt.savefig(f"results/{dataset}/density_and_samples_{K}.png", format='png')
     
-def plot_logp(logps, dataset):
+def plot_logp(logps, dataset, K):
 
     max_len = max([len(logp) for logp, algorithm in logps])
 
@@ -131,19 +187,26 @@ def plot_logp(logps, dataset):
     df = pd.DataFrame(data, columns=['Epoch', 'Algorithm', 'NLL'])
 
     sns.set_theme(style="whitegrid")
-    plt.figure(figsize=(5, 4))
-    sns.lineplot(data=df, x='Epoch', y='NLL', hue='Algorithm', dashes=False, linewidth=1.2, alpha=0.8)
-    
-    plt.xlabel('Epochs', fontsize=8, labelpad=8)
-    plt.ylabel('NLL', fontsize=8, labelpad=8)
-    plt.xlabel(None)
-    plt.ylabel(None)
+    plt.figure(figsize=(15, 8))
 
-    plt.xticks(fontsize=6)
-    plt.yticks(fontsize=6)
-    
-    plt.legend(fontsize=6)
+    palette = sns.color_palette("deep", n_colors=len(logps))
+
+    sns.lineplot(data=df, x='Epoch', y='NLL', hue='Algorithm', style='Algorithm', markers=['s', 'H', 'o', '^'], markersize=10, markevery=2, dashes=False, linewidth=3, alpha=0.7, palette=palette)
+
+    plt.xlabel('Epochs', fontsize=20, fontweight='bold', labelpad=12)
+    plt.ylabel('NLL', fontsize=20, fontweight='bold', labelpad=12)
+
+    # Axis ticks adjustments
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
+
+    plt.legend(fontsize=12, loc='upper right')
+
     plt.grid(True, linestyle='--', linewidth=0.6, alpha=0.7)
-    
-    plt.tight_layout()  
-    plt.savefig(f"results/{dataset}/logp.png", format='png', dpi=300)
+
+    plt.tight_layout()
+
+    # Save figure
+    if not os.path.exists(f'results/{dataset}/'): os.makedirs(f'results/{dataset}/')
+    plt.savefig(f"results/{dataset}/logp_{K}.png", format='png', dpi=300)
+

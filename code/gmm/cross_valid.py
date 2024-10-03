@@ -3,21 +3,28 @@ import data
 import utils
 from sklearn.cluster import KMeans
 import numpy as np
+import torch
+
+import os
+os.environ["LOKY_MAX_CPU_COUNT"] = "4" 
+
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 dataset = 'board'
-algorithm = 'EM'
+algorithms = ['EM', 'SGD', 'SM', 'SSM']
+# algorithms = ['SSM']
 
 # ----------------------------- parameters -------------------------------
 num_samples = 10000
 
-if dataset == 'moons':
-    Ks = [8, 12, 14]  
+if dataset == 'halfmoons':
+    Ks = [8, 12, 20]  
 if dataset == 'spirals':
-    Ks = [30, 40, 50]      
+    Ks = [20, 40, 80]      
 if dataset == 'board':
-    Ks = [60, 80, 100]     
+    Ks = [8, 60, 100]     
 
-lr = [0.1, 0.01]
+lr = [0.05, 0.025, 0.01]
 epochs = [50, 100, 200]
 
 seed = 42
@@ -28,35 +35,40 @@ x = data.get_2d(dataset, num_samples * 2, seed)
 np.random.seed(seed) 
 np.random.shuffle(x)
 
-x_test = x[:num_samples]
-x = x[num_samples:]
+x_test = torch.tensor(x[:num_samples], dtype=torch.float32).to(device)
+x = torch.tensor(x[num_samples:], dtype=torch.float32).to(device)
 
-models = []
+experiments = []
 
-best_params = None
-best_logp = -np.inf
 
 for K in Ks:
     kmeans = KMeans(K, random_state=seed)
-    kmeans.fit(x)
+    kmeans.fit(x.detach().cpu())
     centers = kmeans.cluster_centers_
-    for e in epochs:
-        learning_rates = [None] if algorithm == 'EM' else lr
+    
+    for a in algorithms:
+
+        best_params = None
+        best_logp = -np.inf
+
+        learning_rates = [0] if a == 'EM' else lr
         for l in learning_rates:
-            model = GMM(K, centers)
-            model.fit(x, algorithm, e, l)
-            models.append(model)
+            for e in epochs:
+                model = GMM(K, centers, device).to(device)
+                utils.train(model, x, a, l, e, 1)
 
-            logp = model.log_likelihood(x_test)
-            print(logp)
-            
-            if logp > best_logp:
-                best_logp = logp
-                best_params = {'K': K, 'lr': l, 'epochs': e, 'll': best_logp}
+                logp = model.log_likelihood(x_test)
+                print(f'[{a:{3}}] Test Log-Likelihood = {logp:.4f}')
+                experiments.append((model, (K, l, e), a, logp))
+                
+                if logp > best_logp:
+                    best_logp = logp
+                    best_params = {'lr': l, 'epochs': e, 'll': best_logp}
 
-print(f'best log likelihood = {best_logp}')
-utils.save_best_params(dataset, algorithm, best_params)
-utils.plot_density_and_samples(models, dataset)
+        print(f'best log likelihood = {best_logp}')
+        utils.save_best_params(dataset, a, K, best_params)
+
+# utils.plot_density_and_samples(experiments, dataset)
 
 
 
