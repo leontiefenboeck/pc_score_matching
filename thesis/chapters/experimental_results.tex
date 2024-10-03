@@ -12,41 +12,47 @@ than the training dataset due to limited data availability but since we can basi
 the data generating distribution, I decided to split them in this way. 
 The training samples can be seen in Figure \ref{fig:2d_datasets}. \\
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \makebox[\textwidth][c]{\includegraphics[width=1.2\textwidth]{figures/datasets.png}}
     \caption{2D Samples for all three distributions}
     \label{fig:2d_datasets}
 \end{figure}
 
-\begin{figure}[H]
-    \centering
-    \makebox[\textwidth][c]{\includegraphics[width=1.2\textwidth]{figures/moons_best_ds.png}}
-    \caption{Densities and Samples for "Halfmoons" with best hyperparameters for each algorithm}
-    \label{fig:moons_best}
-\end{figure}
+\newpage
 
 \begin{figure}[H]
     \centering
-    \makebox[\textwidth][c]{\includegraphics[width=1.2\textwidth]{figures/spirals_best_ds.png}}
-    \label{fig:spirals_best}
-    \caption{Densities and samples for "Spirals" with best hyperparameters for each algorithm}
+    \makebox[\textwidth][c]{\hspace*{-1cm} \includegraphics[width=0.9\textwidth]{figures/moons_8.png}}
+    \vskip 8pt
+    \makebox[\textwidth][c]{\hspace*{-1cm} \includegraphics[width=0.9\textwidth]{figures/moons_8.png}}
+    \vskip 8pt
+    \makebox[\textwidth][c]{\hspace*{-1cm} \includegraphics[width=0.9\textwidth]{figures/moons_8.png}}
+    \label{fig:spirals_20}
 \end{figure}
+
+
+\newpage
 
 \begin{figure}[H]
     \centering
-    \makebox[\textwidth][c]{\includegraphics[width=1.2\textwidth]{figures/board_best_ds.png}}
-    \label{fig:board_best}
-    \caption{Densities and samples for "Board" with best hyperparameters for each algorithm}
+    \makebox[\textwidth][c]{\includegraphics[width=1.2\textwidth]{figures/spirals_20.png}}
+    \makebox[\textwidth][c]{\hspace{-0.4cm} \includegraphics[width=1.01\textwidth]{figures/spirals_20_logp.png}}
+    \caption{Densities, Samples and NLL over Training Iterations for Spirals and K = 20}
+    \label{fig:spirals_20}
 \end{figure}
 
+\newpage
 
-% \newpage
+We did three final experiments with the same set of hyperparameters for all algorithms and also timed the 
+learning process. 
+
+\newpage
 \section{Images Density Estimation}
 
 I used the MNIST Dataset \cite{mnist} 
 
-\begin{figure}[htb]
+\begin{figure}[H]
     \centering
     % First subfigure
     \begin{subfigure}[b]{0.3\textwidth}

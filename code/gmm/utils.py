@@ -170,10 +170,11 @@ def plot_density_and_samples(experiments, dataset, K):
     # Set titles for the rows
     fig.text(0.09, 0.70, 'Densities', va='center', rotation='vertical', fontsize=25, fontweight='bold')
     fig.text(0.09, 0.30, 'Samples', va='center', rotation='vertical', fontsize=25, fontweight='bold')
+    fig.text(0.05, 0.5, f'K = {K}', va='center', rotation='vertical', fontsize=35, fontweight='bold')
 
     plt.subplots_adjust(wspace=0.001, hspace=0.001)
     if not os.path.exists(f'results/{dataset}/'): os.makedirs(f'results/{dataset}/')
-    plt.savefig(f"results/{dataset}/density_and_samples_{K}.png", format='png')
+    plt.savefig(f"results/{dataset}/density_and_samples_{K}.png", format='png', bbox_inches='tight')
     
 def plot_logp(logps, dataset, K):
 
