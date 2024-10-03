@@ -69,8 +69,14 @@ automatic differentiation capabilities.
 Note that for Gradient Descent to work we instead need to minimize the negative log likelihood $- \log p(\vec x)$, 
 but this yields the same results as maximizing the log likelihood.
 
-\section{Training via Score Matching}
-\label{sec:gmm_score_matching}
+\subsection{Training via Expectation Maximization}
+\label{sec:gmm_em}
+
+\subsection{Training via Gradient Descent}
+\label{sec:gmm_sgd}
+
+\subsection{Training via Score Matching}
+\label{sec:gmm_sm}
 
 To train the simple PC from above using Score Matching recall 
 the objective function \ref{eq:sm_objective} from Section \ref{sec:sm}. 
@@ -101,7 +107,8 @@ The exact step-by-step way I calculated $\mathcal{J}(\theta)$ can be seen in Alg
 To calculate the gradients as in $\text{grad}(\log p_m(\vec x;\theta), \vec x)$ I used torch.autograd.grad. 
 
 
-\section{Training via Sliced Score Matching}
+\subsection{Training via Sliced Score Matching}
+\label{sec:gmm_ssm}
 
 Similar to Section \ref{sec:gmm_score_matching} we take the objective function \ref{eq:ssm_vr} from Section \ref{sec:ssm} and formulate
 the optimization problem:
@@ -124,6 +131,9 @@ in Algorithm \ref{alg:ssm}.
         \State \Return $\mathcal{J}$
     \end{algorithmic}
 \end{algorithm}
+
+\subsection{Sampling from a PC}
+\label{sec:gmm_sampling}
 
 \section{Using more complex PCs}
 

@@ -83,8 +83,8 @@ Gaussian Mixture Model (GMM), where one sum node mixes two leaf nodes, as depict
     \node[sum, above=1.5cm of $(input1)!0.5!(input2)$] (sum) {$+$};
 
     % Edges
-    \draw[->, thick] (input1) -- node[midway,left] {$w_1$} (sum);
-    \draw[->, thick] (input2) -- node[midway,right] {$w_2$} (sum);
+    \draw[-, thick] (input1) -- node[midway,left] {$w_1$} (sum);
+    \draw[-, thick] (input2) -- node[midway,right] {$w_2$} (sum);
 
     \end{tikzpicture}
     \caption{Simplest SPN}
@@ -113,14 +113,14 @@ Furthermore an only slightly more complex SPN with a product node and two sum no
     \node[product, above=1.5cm of $(sum1)!0.5!(sum2)$] (prod) {$\times$};
 
     % Edges
-    \draw[->, thick] (input1) -- node[midway,left] {$w_1$} (sum1);
-    \draw[->, thick] (input2) -- node[midway,right] {$w_2$} (sum1);
+    \draw[-, thick] (input1) -- node[midway,left] {$w_1$} (sum1);
+    \draw[-, thick] (input2) -- node[midway,right] {$w_2$} (sum1);
     
-    \draw[->, thick] (input3) -- node[midway,left] {$w_3$} (sum2);
-    \draw[->, thick] (input4) -- node[midway,right] {$w_4$} (sum2);
+    \draw[-, thick] (input3) -- node[midway,left] {$w_3$} (sum2);
+    \draw[-, thick] (input4) -- node[midway,right] {$w_4$} (sum2);
 
-    \draw[->, thick] (sum1) -- (prod);
-    \draw[->, thick] (sum2) -- (prod);
+    \draw[-, thick] (sum1) -- (prod);
+    \draw[-, thick] (sum2) -- (prod);
 
     \end{tikzpicture}
     \caption{Simple SPN}

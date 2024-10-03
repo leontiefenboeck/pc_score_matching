@@ -10,7 +10,7 @@ algorithms.
 Using these I generated 20,000 datapoints and split them evenly into a train and a test dataset. Note that usually the test dataset is smaller 
 than the training dataset due to limited data availability but since we can basically generate unlimited samples if we know 
 the data generating distribution, I decided to split them in this way. 
-The training samples can be seen in Figure \ref{fig:2d_datasets}.
+The training samples can be seen in Figure \ref{fig:2d_datasets}. \\
 
 \begin{figure}[h]
     \centering
@@ -19,23 +19,21 @@ The training samples can be seen in Figure \ref{fig:2d_datasets}.
     \label{fig:2d_datasets}
 \end{figure}
 
-
-
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \makebox[\textwidth][c]{\includegraphics[width=1.2\textwidth]{figures/moons_best_ds.png}}
     \caption{Densities and Samples for "Halfmoons" with best hyperparameters for each algorithm}
     \label{fig:moons_best}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \makebox[\textwidth][c]{\includegraphics[width=1.2\textwidth]{figures/spirals_best_ds.png}}
     \label{fig:spirals_best}
     \caption{Densities and samples for "Spirals" with best hyperparameters for each algorithm}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \makebox[\textwidth][c]{\includegraphics[width=1.2\textwidth]{figures/board_best_ds.png}}
     \label{fig:board_best}
@@ -43,11 +41,37 @@ The training samples can be seen in Figure \ref{fig:2d_datasets}.
 \end{figure}
 
 
-% \section{High Dimensional Density Estimation}
+% \newpage
+\section{Images Density Estimation}
 
-% \subsection{Datasets}
+I used the MNIST Dataset \cite{mnist} 
 
-% \subsection{Results}
+\begin{figure}[htb]
+    \centering
+    % First subfigure
+    \begin{subfigure}[b]{0.3\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/mnist_EM.png} % replace with your image file
+        \caption{EM}
+        \label{fig:sub1}
+    \end{subfigure}
+    \hfill
+    % Second subfigure
+    \begin{subfigure}[b]{0.3\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/mnist_SGD.png} % replace with your image file
+        \caption{SGD}
+        \label{fig:sub2}
+    \end{subfigure}
+    \hfill
+    % Third subfigure
+    \begin{subfigure}[b]{0.3\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/mnist_SSM.png} % replace with your image file
+        \caption{SSM}
+        \label{fig:sub3}
+    \end{subfigure}
 
-
-
+    \caption{MNIST Samples}
+    \label{fig:three_images}
+\end{figure}
