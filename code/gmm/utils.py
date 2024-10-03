@@ -1,6 +1,8 @@
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
 import os 
 import json
 
@@ -63,20 +65,19 @@ def plot_data(x, dataset):
     plt.figure(figsize=(9, 6))
 
     plt.scatter(x[:, 0], x[:, 1], 
-                c='dodgerblue',    # Set point color
-                s=20,              # Set point size
-                alpha=0.7,         # Add transparency to points
+                c='dodgerblue',     # Set point color
+                s=20,               # Set point size
+                alpha=0.7,          # Add transparency to points
                 edgecolor='k',      # Black edge for contrast
                 linewidth=0.1)      # Thin edge
     
-    # Remove ticks and labels as per original
     plt.tick_params(left=False, bottom=False, labelleft=False, labelbottom=False)
     plt.grid(True, which='both', linestyle='--', linewidth=0.5, alpha=0.7)
     plt.axis('off')
 
-    plt.savefig(f"results/{dataset}/ground_truth.png", format='png')
+    plt.savefig(f"results/{dataset}/data.png", format='png')
 
-def plot_density_and_samples(models, dataset):
+def plot_density_and_samples(experiments, dataset):
 
     bins = 100
     lim = 4
@@ -86,27 +87,28 @@ def plot_density_and_samples(models, dataset):
 
     X, Y, grid = create_grid(lim)
 
-    fig, ax = plt.subplots(2, len(models), figsize=(len(models) * 5, 10))
+    fig, ax = plt.subplots(2, len(experiments), figsize=(len(experiments) * 5, 10))
 
-    if len(models) == 1:
+    if len(experiments) == 1:
         ax = np.expand_dims(ax, 1)
 
-    for i in range(len(models)):
-        samples = models[i].sample(100000)
+    for i in range(len(experiments)):
+        model, hyperparameters, algorithm, ll = experiments[i]
 
-        K, lr, epochs = models[i].get_hyperparams()
-        ll = models[i].get_ll()
+        samples = model.sample(100000)
+
+        K, lr, epochs = hyperparameters
 
         with torch.no_grad():
-            density = torch.exp(models[i](grid))
+            density = torch.exp(model(grid.to(model.device)))
 
-        ax[0, i].set_title(f'{models[i].get_algorithm()} \n LL = {ll:.2f}', fontsize=20, pad=10, fontweight='bold')
+        ax[0, i].set_title(f'{algorithm} \n LL = {ll:.2f}', fontsize=20, pad=10, fontweight='bold')
 
-        ax[0, i].contour(X, Y, density.reshape(X.shape), levels=100, cmap=plt.cm.inferno, linewidths=1.5)
+        ax[0, i].contour(X, Y, density.cpu().reshape(X.shape), levels=100, cmap=plt.cm.inferno, linewidths=1.5)
         ax[0, i].tick_params(left=False, bottom=False, labelleft=False, labelbottom=False)
         
+        ax[1, i].hist2d(samples.cpu()[:, 0], samples.cpu()[:, 1], range=hist_range, bins=bins, cmap=plt.cm.inferno)
         ax[1, i].tick_params(left=False, bottom=False, labelleft=False, labelbottom=False)
-        ax[1, i].hist2d(samples[:, 0], samples[:, 1], range=hist_range, bins=bins, cmap=plt.cm.inferno)
 
         ax[1, i].set_xlabel(f'K = {K}, lr = {lr}, epochs = {epochs}', fontsize=14, labelpad=10, fontweight='bold')
 
@@ -114,38 +116,34 @@ def plot_density_and_samples(models, dataset):
     fig.text(0.09, 0.70, 'Densities', va='center', rotation='vertical', fontsize=25, fontweight='bold')
     fig.text(0.09, 0.30, 'Samples', va='center', rotation='vertical', fontsize=25, fontweight='bold')
 
-    # Adjust spacing
     plt.subplots_adjust(wspace=0.001, hspace=0.001)
     plt.savefig(f"results/{dataset}/density_and_samples.png", format='png')
-
-def plot_losses(models, dataset):
     
-    fig, ax = plt.subplots(len(models), 2, figsize=(10, 5 * len(models)))
-    fig.suptitle('Losses vs. Logp')
+def plot_logp(logps, dataset):
 
-    if len(models) == 1:
-        ax = [ax]
+    max_len = max([len(logp) for logp, algorithm in logps])
 
-    for i in range(len(models)):
-        algorithm = models[i].get_algorithm()
-        ax[i][0].set_title(f'{algorithm} Loss')
-        ax[i][0].plot(models[i].get_loss())
-        ax[i][1].set_title(f'{algorithm} negative Log Likelihood')
-        ax[i][1].plot(models[i].get_logp())
+    data = []
+    for logp, algorithm in logps:
+        padded_logp = np.pad(logp, (0, max_len - len(logp)), constant_values=np.nan)
+        data.extend([(epoch, algorithm, value) for epoch, value in enumerate(padded_logp)])
 
-    plt.subplots_adjust(hspace=0.5)
-    plt.savefig(f"results/{dataset}/losses.png", format='png')
+    df = pd.DataFrame(data, columns=['Epoch', 'Algorithm', 'NLL'])
+
+    sns.set_theme(style="whitegrid")
+    plt.figure(figsize=(5, 4))
+    sns.lineplot(data=df, x='Epoch', y='NLL', hue='Algorithm', dashes=False, linewidth=1.2, alpha=0.8)
     
-def plot_logp(models, dataset):
-    fig, ax = plt.subplots(1, len(models), figsize=(5 * len(models), 3))
+    plt.xlabel('Epochs', fontsize=8, labelpad=8)
+    plt.ylabel('NLL', fontsize=8, labelpad=8)
+    plt.xlabel(None)
+    plt.ylabel(None)
 
-    if len(models) == 1:
-        ax = [ax]
-
-    for i in range(len(models)):
-        algorithm = models[i].get_algorithm()
-        ax[i].set_title(f'{algorithm}')
-        ax[i].plot(models[i].get_logp())
-
-    plt.subplots_adjust(hspace=0.5)
-    plt.savefig(f"results/{dataset}/logp.png", format='png')
+    plt.xticks(fontsize=6)
+    plt.yticks(fontsize=6)
+    
+    plt.legend(fontsize=6)
+    plt.grid(True, linestyle='--', linewidth=0.6, alpha=0.7)
+    
+    plt.tight_layout()  
+    plt.savefig(f"results/{dataset}/logp.png", format='png', dpi=300)
