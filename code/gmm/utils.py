@@ -51,7 +51,7 @@ def train(model, x, algorithm, lr, epochs, n_slices):
         if algorithm == 'EM':
             model.EM_step(x)
         else: 
-            if algorithm == "SGD":
+            if algorithm == "GD":
                 loss = -torch.mean(model(x))
             if algorithm == "SSM":
                 loss = ssm_loss(model, x, n_slices)
@@ -155,25 +155,26 @@ def plot_density_and_samples(experiments, dataset, K):
         K, lr, epochs = hyperparameters
 
         with torch.no_grad():
-            density = torch.exp(model(grid.to(model.device)))
+            density = model(grid.to(model.device))
 
         ax[0, i].set_title(f'{algorithm} \n LL = {ll:.2f}', fontsize=20, pad=10, fontweight='bold')
 
-        ax[0, i].contour(X, Y, density.cpu().reshape(X.shape), levels=100, cmap=plt.cm.inferno, linewidths=1.5)
+        ax[0, i].contourf(X, Y, density.cpu().reshape(X.shape), levels=30, cmap=plt.cm.viridis)
         ax[0, i].tick_params(left=False, bottom=False, labelleft=False, labelbottom=False)
         
-        ax[1, i].hist2d(samples.cpu()[:, 0], samples.cpu()[:, 1], range=hist_range, bins=bins, cmap=plt.cm.inferno)
+        ax[1, i].hist2d(samples.cpu()[:, 0], samples.cpu()[:, 1], range=hist_range, bins=bins, cmap=plt.cm.viridis)
         ax[1, i].tick_params(left=False, bottom=False, labelleft=False, labelbottom=False)
 
         ax[1, i].set_xlabel(f'lr = {lr}, epochs = {epochs}', fontsize=14, labelpad=10, fontweight='bold')
 
     # Set titles for the rows
-    fig.text(0.09, 0.70, 'Densities', va='center', rotation='vertical', fontsize=25, fontweight='bold')
+    fig.text(0.09, 0.70, 'Log-Densities', va='center', rotation='vertical', fontsize=25, fontweight='bold')
     fig.text(0.09, 0.30, 'Samples', va='center', rotation='vertical', fontsize=25, fontweight='bold')
+    fig.text(0.05, 0.50, f'K = {K}', va='center', rotation='vertical', fontsize=35, fontweight='bold')
 
     plt.subplots_adjust(wspace=0.001, hspace=0.001)
     if not os.path.exists(f'results/{dataset}/'): os.makedirs(f'results/{dataset}/')
-    plt.savefig(f"results/{dataset}/density_and_samples_{K}.png", format='png')
+    plt.savefig(f"results/{dataset}/dataset_{K}.png", format='png')
     
 def plot_logp(logps, dataset, K):
 

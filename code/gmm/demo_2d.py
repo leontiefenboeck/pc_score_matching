@@ -11,12 +11,12 @@ os.environ["LOKY_MAX_CPU_COUNT"] = "4"
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-dataset = 'spirals'
-algorithms = ['EM', 'SGD', 'SM', 'SSM']
-# algorithms = ['SGD']
+dataset = 'halfmoons'
+algorithms = ['EM', 'GD', 'SM', 'SSM']
+# algorithms = ['GD']
 
-use_best_parameters = True     # parameters after cross validation (used in thesis)
-K_index = 0                     # use 0 for small, 1 for middle and 2 for large K (when using best parameters)
+use_best_parameters = True        # parameters after cross validation (used in thesis)
+K_index = 2                       # use 0 for small, 1 for moderate and 2 for large K (when using best parameters)
 
 # ----------------------------- parameters -------------------------------
 num_samples = 10000
@@ -29,7 +29,7 @@ n_slices = 1                # how many random vectors for sliced score matching
 
 seed = 42
 
-if dataset == 'halfmoons': Ks = [8, 12, 20]  
+if dataset == 'halfmoons': Ks = [6, 10, 16]  
 if dataset == 'spirals': Ks = [20, 40, 80]      
 if dataset == 'board': Ks = [8, 60, 100]  
 
@@ -67,4 +67,4 @@ for a in algorithms:
 # ------------------------------ visualization ---------------------------
 # utils.plot_data(x.detach().cpu(), dataset)
 utils.plot_density_and_samples(experiments, dataset, K)
-utils.plot_logp(logps, dataset, K)
+# utils.plot_logp(logps, dataset, K)

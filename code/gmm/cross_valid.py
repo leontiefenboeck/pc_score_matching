@@ -10,15 +10,15 @@ os.environ["LOKY_MAX_CPU_COUNT"] = "4"
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-dataset = 'board'
-algorithms = ['EM', 'SGD', 'SM', 'SSM']
+dataset = 'halfmoons'
+algorithms = ['EM', 'GD', 'SM', 'SSM']
 # algorithms = ['SSM']
 
 # ----------------------------- parameters -------------------------------
 num_samples = 10000
 
 if dataset == 'halfmoons':
-    Ks = [8, 12, 20]  
+    Ks = [6, 10, 16]  
 if dataset == 'spirals':
     Ks = [20, 40, 80]      
 if dataset == 'board':
