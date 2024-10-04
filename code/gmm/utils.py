@@ -174,7 +174,7 @@ def plot_density_and_samples(experiments, dataset, K):
 
     plt.subplots_adjust(wspace=0.001, hspace=0.001)
     if not os.path.exists(f'results/{dataset}/'): os.makedirs(f'results/{dataset}/')
-    plt.savefig(f"results/{dataset}/dataset_{K}.png", format='png')
+    plt.savefig(f"results/{dataset}/{dataset}_{K}.png", format='png', bbox_inches='tight')
     
 def plot_logp(logps, dataset, K):
 
@@ -209,5 +209,5 @@ def plot_logp(logps, dataset, K):
 
     # Save figure
     if not os.path.exists(f'results/{dataset}/'): os.makedirs(f'results/{dataset}/')
-    plt.savefig(f"results/{dataset}/logp_{K}.png", format='png', dpi=300)
+    plt.savefig(f"results/{dataset}/logp.png", format='png', dpi=300)
 

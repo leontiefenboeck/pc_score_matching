@@ -15,7 +15,7 @@ dataset = 'halfmoons'
 algorithms = ['EM', 'GD', 'SM', 'SSM']
 # algorithms = ['GD']
 
-use_best_parameters = True        # parameters after cross validation (used in thesis)
+use_best_parameters = False        # parameters after cross validation (used in thesis)
 K_index = 2                       # use 0 for small, 1 for moderate and 2 for large K (when using best parameters)
 
 # ----------------------------- parameters -------------------------------
