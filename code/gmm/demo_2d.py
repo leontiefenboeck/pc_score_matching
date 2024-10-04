@@ -6,8 +6,8 @@ from gmm import GMM
 import data
 import utils
 
-import os
-os.environ["LOKY_MAX_CPU_COUNT"] = "4" 
+# import os
+# os.environ["LOKY_MAX_CPU_COUNT"] = "4" 
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -23,7 +23,7 @@ num_samples = 10000
 
 K = 10                      # number of components 
 lr = 0.01                   # learning rate
-epochs = 50                # number of training epochs
+epochs = 100                # number of training epochs
 
 n_slices = 1                # how many random vectors for sliced score matching
 
