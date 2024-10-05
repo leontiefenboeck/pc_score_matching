@@ -1,55 +1,114 @@
+\renewcommand{\vec}[1]{\textbf{#1}}
+
 \chapter{Experimental Results}
 \label{cha:experimental_results}
 
 \section{2D Density Esitmation}
 
-For the GMM I used three functions that generate two dimensional data in some specific pattern with some added random noise. These 
-can be seen as the true data generating distribution and the goal is to model this distribution using the GMM with the discussed 
-algorithms. 
+To test the simple model from Section \ref{sec:simple_pc} with the discussed algorithms, so Expectation Maximization (EM), 
+Gradient Descent (GD), Score Matching (SM) and Sliced Score Matching (SSM) from subsections \ref{sec:gmm_em} to \ref{sec:gmm_ssm}, we used some 
+two dimensional data to perform density estimation. 
 
-Using these I generated 20,000 datapoints and split them evenly into a train and a test dataset. Note that usually the test dataset is smaller 
-than the training dataset due to limited data availability but since we can basically generate unlimited samples if we know 
-the data generating distribution, I decided to split them in this way. 
-The training samples can be seen in Figure \ref{fig:2d_datasets}. \\
+Samples from the three datasets we used can be seen in Figure \ref{fig:2d_datasets}. \\
 
+\vspace{10pt}
 \begin{figure}[H]
     \centering
-    \makebox[\textwidth][c]{\includegraphics[width=1.2\textwidth]{figures/datasets.png}}
-    \caption{2D Samples for all three distributions}
+    \begin{subfigure}[b]{0.4\textwidth} 
+        \centering
+        \includegraphics[width=\textwidth]{figures/halfmoons.png}
+        \caption{halfmoons}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.4\textwidth} 
+        \centering
+        \includegraphics[width=\textwidth]{figures/spirals.png} 
+        \caption{spirals}
+    \end{subfigure}
+    
+    \vskip\baselineskip 
+    \begin{subfigure}[b]{0.4\textwidth} 
+        \centering
+        \includegraphics[width=\textwidth]{figures/board.png}
+        \caption{board}
+    \end{subfigure}
+    
+    \caption{Samples for all three datasets}
     \label{fig:2d_datasets}
 \end{figure}
 
+
+\subsection{Experiment 1}
+
+In the basic first set of experiments we wanted to see the best possible results for each algorithm on each dataset. 
+
+For each dataset we generated 20,000 datapoints and split them evenly for training and testing. However before the training process can start, recall 
+that our model is governed by the learnable parameters $\boldsymbol \pi$ (mixture weights), $\boldsymbol \mu$ (means of components) and
+$\boldsymbol \Sigma$ (covariance matrices of components) that need to be initialized in some manner and the hyperparameter $K$ (mixture count) that needs to be chosen. 
+
+As for the learnable parameters, we initialized the mixture weights $\boldsymbol \pi$ uniformly 
+\[
+    \boldsymbol{\pi}_k = \frac{1}{K}, \quad k = 1, 2, \dots, K
+\]
+the covariance matrices $\boldsymbol \Sigma$ as identy matrices of size $D \times D$ 
+\[
+    \mathbf{\Sigma}_k = \mathbf{I}_D, \quad k = 1, 2, \dots, K
+\]
+where $D$ is the dimensionality of the data, which is $2$ in this case and the means $\boldsymbol \mu$ by computing cluster centers of the data with the sklearn implementation of Kmeans. 
+
+As for $K$, trrough some intitial testing we chose three different values, namely a minimal $K$ that is needed for producing reasonable results, 
+a very large K frow which onwards we get dimishing returns and a moderate value in the middle between the minimal and the large $K$.
+
+Now for the training process also recall that it is governed by the hyperparameters epochs (number of training iterations) for all algorithms and 
+a learning rate (step-size for Gradient Descent) for all the gradient-based algorithms (GD, SM, SSM).
+To choose these parameters we fixed $K$ to one of the three chosen values and did cross-validation by computing the test set Log-Likelihood 
+of the models with all possible remaining hyperparameter combinations and choosing the combination with the highest Log-Likelihood.
+
+Results, more specifically Log-Likelihood, estimated densities and samples for all datasets and all values of $K$ with the best possible training-specific 
+hyperparameters can be seen in the following three pages. Note that apart from Sliced Score Matching, which has an inherent randomness when drawing the projection vectors $\vec v$ all these results should be 
+exactly reproducable when setting the same random seed. However as later discussed this randomness in Sliced Score Matching is quite neglicable, see Section \ref{sec:2d_exp2}.
+
 \newpage
 \begin{figure}[H]
     \centering
-    \makebox[\textwidth][c]{\hspace*{-1cm} \includegraphics[width=\textwidth]{figures/moons_6.png}}
-    \vskip 1pt
-    \makebox[\textwidth][c]{\hspace*{-1cm} \includegraphics[width=\textwidth]{figures/moons_10.png}}
-    \vskip 1pt
-    \makebox[\textwidth][c]{\hspace*{-1cm} \includegraphics[width=\textwidth]{figures/moons_16.png}}
+    \makebox[\textwidth][c]{\hspace*{-1cm} \includegraphics[width=0.9\textwidth]{figures/halfmoons_8.png}}
+    \vskip 5pt
+    \makebox[\textwidth][c]{\hspace*{-1cm} \includegraphics[width=0.9\textwidth]{figures/halfmoons_12.png}}
+    \vskip 5pt
+    \makebox[\textwidth][c]{\hspace*{-1cm} \includegraphics[width=0.9\textwidth]{figures/halfmoons_24.png}}
     \label{fig:exp_moons}
 \end{figure}
 \newpage
 \begin{figure}[H]
     \centering
-    \makebox[\textwidth][c]{\hspace*{-1cm} \includegraphics[width=\textwidth]{figures/spirals_20.png}}
-    \vskip 1pt
-    \makebox[\textwidth][c]{\hspace*{-1cm} \includegraphics[width=\textwidth]{figures/spirals_40.png}}
-    \vskip 1pt
-    \makebox[\textwidth][c]{\hspace*{-1cm} \includegraphics[width=\textwidth]{figures/spirals_80.png}}
+    \makebox[\textwidth][c]{\hspace*{-1cm} \includegraphics[width=0.9\textwidth]{figures/spirals_20.png}}
+    \vskip 5pt
+    \makebox[\textwidth][c]{\hspace*{-1cm} \includegraphics[width=0.9\textwidth]{figures/spirals_40.png}}
+    \vskip 5pt
+    \makebox[\textwidth][c]{\hspace*{-1cm} \includegraphics[width=0.9\textwidth]{figures/spirals_80.png}}
     \label{fig:exp_moons}
 \end{figure}
 \newpage
 \begin{figure}[H]
     \centering
-    \makebox[\textwidth][c]{\hspace*{-1cm} \includegraphics[width=\textwidth]{figures/board_8.png}}
-    \vskip 1pt
-    \makebox[\textwidth][c]{\hspace*{-1cm} \includegraphics[width=\textwidth]{figures/board_60.png}}
-    \vskip 1pt
-    \makebox[\textwidth][c]{\hspace*{-1cm} \includegraphics[width=\textwidth]{figures/board_100.png}}
+    \makebox[\textwidth][c]{\hspace*{-1cm} \includegraphics[width=0.9\textwidth]{figures/board_8.png}}
+    \vskip 5pt
+    \makebox[\textwidth][c]{\hspace*{-1cm} \includegraphics[width=0.9\textwidth]{figures/board_60.png}}
+    \vskip 5pt
+    \makebox[\textwidth][c]{\hspace*{-1cm} \includegraphics[width=0.9\textwidth]{figures/board_100.png}}
     \label{fig:exp_moons}
 \end{figure}
 \newpage
+
+\subsection{Experiment 2}
+\label{sec:2d_exp2}
+
+To gain further insight in how the learning process differs for the algorithms we chose a dataset and a set of hyperparameters
+where all algorithms perform somewhat similar and analize the Negative Log-Likelihood (NLL) over Epochs curve. 
+Estimated density and samples and now also the mentioned training curve can be seen in Figure 
+
+Note that because all algorithms except Sliced Score Matching are deterministic, we did multiple runs for SSM and ploted the mean value 
+and shaded the standard deviation. 
 
 % \begin{figure}[H]
 %     \centering
@@ -59,10 +118,24 @@ The training samples can be seen in Figure \ref{fig:2d_datasets}. \\
 %     \label{fig:spirals_20}
 % \end{figure}
 
-\newpage
+\subsection{Experiment 3}
+\label{sec:2d_exp3}
 
-We did three final experiments with the same set of hyperparameters for all algorithms and also timed the 
-learning process. 
+With our data it is quite straightforward to initialize the means, which up to now has been done with KMeans, but this is not always the case.
+Also initializing the weights uniformly convieniently makes a lot of sense with our data. In fact the initialization of both of these 
+learnable parameters can be problematic and a lot of times this has to be done randomly. Therefore we also analized how each algorithm 
+behaves when these parameters are initialized randomly. To intitialize the means we draw $K$ random datapoints from our test data and 
+to initialize the weights we just draw random numbers from $0$ to $1$ and make sure that they sum to $1$ by normalizing them.
+
+In Figure the mean Log-Likelihood over Epochs with standard deviation over 10 runs with random initialization for each run can be seen. 
+There is also a represantative sample of the estimated density and samples plot included. 
+
+Note that Figure was initialized with KMeans but uses the same hyperparameters apart from that, so it can be used for comparison. 
+
+\subsection{Experiment 4}
+
+Before continuing with the high dimensional experiments, we wanted to compare SSM and SM more extensively since in the high dimensional case
+only SSM is usable. 
 
 \newpage
 \section{Images Density Estimation}
