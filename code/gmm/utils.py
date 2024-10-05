@@ -114,9 +114,7 @@ def create_grid(lim):
 
     return (X, Y, grid)
 
-def plot_data(x, dataset):
-
-    plt.tick_params(left=False, bottom=False, labelleft=False, labelbottom=False)
+def plot_data(x, dataset, cluster_centers=None):
     plt.figure(figsize=(9, 6))
 
     plt.scatter(x[:, 0], x[:, 1], 
@@ -125,12 +123,21 @@ def plot_data(x, dataset):
                 alpha=0.7,          # Add transparency to points
                 edgecolor='k',      # Black edge for contrast
                 linewidth=0.1)      # Thin edge
-    
+
+    if cluster_centers is not None:
+        plt.scatter(cluster_centers[:, 0], cluster_centers[:, 1], 
+                    c='red',            
+                    s=100,              
+                    marker='X',         
+                    edgecolor='k',      
+                    linewidth=1.5)      
+
     plt.tick_params(left=False, bottom=False, labelleft=False, labelbottom=False)
     plt.grid(True, which='both', linestyle='--', linewidth=0.5, alpha=0.7)
     plt.axis('off')
+    plt.tight_layout()
 
-    plt.savefig(f"results/{dataset}/data.png", format='png')
+    plt.savefig(f"results/{dataset}/data.png", format='png', bbox_inches='tight')
 
 def plot_density_and_samples(experiments, dataset, K):
 
@@ -153,37 +160,37 @@ def plot_density_and_samples(experiments, dataset, K):
         samples = model.sample(100000)
 
         K, lr, epochs = hyperparameters
+        if lr == 0: lr = 'none'
 
         with torch.no_grad():
             density = model(grid.to(model.device))
 
         ax[0, i].set_title(f'{algorithm} \n LL = {ll:.2f}', fontsize=20, pad=10, fontweight='bold')
 
-        ax[0, i].contourf(X, Y, density.cpu().reshape(X.shape), levels=30, cmap=plt.cm.viridis)
+        ax[0, i].contourf(X, Y, density.cpu().reshape(X.shape), levels=30, cmap=plt.cm.inferno)
         ax[0, i].tick_params(left=False, bottom=False, labelleft=False, labelbottom=False)
         
-        ax[1, i].hist2d(samples.cpu()[:, 0], samples.cpu()[:, 1], range=hist_range, bins=bins, cmap=plt.cm.viridis)
+        ax[1, i].hist2d(samples.cpu()[:, 0], samples.cpu()[:, 1], range=hist_range, bins=bins, cmap=plt.cm.inferno)
         ax[1, i].tick_params(left=False, bottom=False, labelleft=False, labelbottom=False)
 
-        ax[1, i].set_xlabel(f'lr = {lr}, epochs = {epochs}', fontsize=14, labelpad=10, fontweight='bold')
+        # ax[1, i].set_xlabel(f'lr = {lr}, epochs = {epochs}', fontsize=14, labelpad=10, fontweight='bold')
 
     # Set titles for the rows
     fig.text(0.09, 0.70, 'Log-Densities', va='center', rotation='vertical', fontsize=25, fontweight='bold')
     fig.text(0.09, 0.30, 'Samples', va='center', rotation='vertical', fontsize=25, fontweight='bold')
-    fig.text(0.05, 0.50, f'K = {K}', va='center', rotation='vertical', fontsize=35, fontweight='bold')
+    # fig.text(0.05, 0.50, f'K = {K}', va='center', rotation='vertical', fontsize=35, fontweight='bold')
+    fig.text(0.5, 0.08, f'K = {K}, lr = {lr}, epochs = {epochs}', ha='center', fontsize=18, fontweight='bold')
+
 
     plt.subplots_adjust(wspace=0.001, hspace=0.001)
     if not os.path.exists(f'results/{dataset}/'): os.makedirs(f'results/{dataset}/')
-    plt.savefig(f"results/{dataset}/{dataset}_{K}.png", format='png', bbox_inches='tight')
+    plt.savefig(f"results/{dataset}/densities_and_samples.png", format='png', bbox_inches='tight')
     
 def plot_logp(logps, dataset, K):
 
-    max_len = max([len(logp) for logp, algorithm in logps])
-
     data = []
     for logp, algorithm in logps:
-        padded_logp = np.pad(logp, (0, max_len - len(logp)), constant_values=np.nan)
-        data.extend([(epoch, algorithm, value) for epoch, value in enumerate(padded_logp)])
+        data.extend([(epoch, algorithm, value) for epoch, value in enumerate(logp)])
 
     df = pd.DataFrame(data, columns=['Epoch', 'Algorithm', 'NLL'])
 
@@ -192,22 +199,47 @@ def plot_logp(logps, dataset, K):
 
     palette = sns.color_palette("deep", n_colors=len(logps))
 
-    sns.lineplot(data=df, x='Epoch', y='NLL', hue='Algorithm', style='Algorithm', markers=['s', 'H', 'o', '^'], markersize=10, markevery=2, dashes=False, linewidth=3, alpha=0.7, palette=palette)
+    sns.lineplot(data=df, x='Epoch', y='NLL', hue='Algorithm', style='Algorithm', markers=['s', 'H', 'o', '^'], markersize=6, markevery=2, dashes=False, linewidth=3, alpha=0.7, palette=palette)
 
     plt.xlabel('Epochs', fontsize=20, fontweight='bold', labelpad=12)
     plt.ylabel('NLL', fontsize=20, fontweight='bold', labelpad=12)
-
-    # Axis ticks adjustments
     plt.xticks(fontsize=12)
     plt.yticks(fontsize=12)
-
     plt.legend(fontsize=12, loc='upper right')
-
     plt.grid(True, linestyle='--', linewidth=0.6, alpha=0.7)
-
     plt.tight_layout()
 
-    # Save figure
     if not os.path.exists(f'results/{dataset}/'): os.makedirs(f'results/{dataset}/')
-    plt.savefig(f"results/{dataset}/logp.png", format='png', dpi=300)
+    plt.savefig(f"results/{dataset}/logp.png", format='png', dpi=300, bbox_inches='tight')
 
+def plot_logp_std(logps, dataset):
+    data = []
+    
+    for logp, algorithm in logps:
+        data.extend([(epoch, algorithm, np.mean(value), np.std(value)) for epoch, value in enumerate(logp)])
+
+    df = pd.DataFrame(data, columns=['Epoch', 'Algorithm', 'Mean NLL', 'Std NLL'])
+
+    sns.set_theme(style="whitegrid")
+    plt.figure(figsize=(15, 8))
+
+    palette = sns.color_palette("deep", n_colors=len(logps))
+
+    sns.lineplot(data=df, x='Epoch', y='Mean NLL', hue='Algorithm', style='Algorithm', 
+                 markers=['s', 'D', 'o', '^'], markersize=5, markevery=4, 
+                 dashes=False, linewidth=3, alpha=0.7, palette=palette)
+
+    for algorithm in df['Algorithm'].unique():
+        subset = df[df['Algorithm'] == algorithm]
+        plt.fill_between(subset['Epoch'], subset['Mean NLL'] - subset['Std NLL'], subset['Mean NLL'] + subset['Std NLL'], alpha=0.5)
+
+    plt.xlabel('Epochs', fontsize=20, fontweight='bold', labelpad=12)
+    plt.ylabel('Mean NLL', fontsize=20, fontweight='bold', labelpad=12)
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
+    plt.legend(fontsize=12, loc='upper right')
+    plt.grid(True, linestyle='--', linewidth=0.6, alpha=0.7)
+    plt.tight_layout()
+
+    if not os.path.exists(f'results/{dataset}/'): os.makedirs(f'results/{dataset}/')
+    plt.savefig(f"results/{dataset}/logp.png", format='png', dpi=300, bbox_inches='tight')

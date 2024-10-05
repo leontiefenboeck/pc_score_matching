@@ -18,7 +18,7 @@ algorithms = ['EM', 'GD', 'SM', 'SSM']
 num_samples = 10000
 
 if dataset == 'halfmoons':
-    Ks = [6, 10, 16]  
+    Ks = [8, 12, 24]  
 if dataset == 'spirals':
     Ks = [20, 40, 80]      
 if dataset == 'board':

@@ -4,19 +4,20 @@ import torch.distributions as dist
 
 class GMM(nn.Module):
 
-    def __init__(self, K, means_init, device, n_features=2):
+    def __init__(self, device, K, means_init, random_weights = False, n_features=2):
         super(GMM, self).__init__()
         self.device = device
         self.K = K
         self.n_features = n_features
 
-        if means_init.any(): 
-            self.means = nn.Parameter(torch.tensor(means_init))
+        if random_weights:
+            pi_init = torch.rand(K, dtype=torch.float32)  
+            self.pi = nn.Parameter(pi_init / pi_init.sum())
         else:
-            self.means = nn.Parameter(torch.rand(means_init))
+            self.pi = nn.Parameter(torch.ones(K) / K)
 
+        self.means = nn.Parameter(torch.tensor(means_init))
         self.chol_var = nn.Parameter(torch.eye(n_features).repeat(K, 1, 1))
-        self.pi = nn.Parameter(torch.ones(K) / K)
 
     def forward(self, x):
         log_likelihoods = torch.zeros(x.size(0), self.K, device=x.device)  # Ensure it's on the same device as x
