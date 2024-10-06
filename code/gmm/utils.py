@@ -84,8 +84,7 @@ def save_best_params(dataset, algorithm, K, best_params):
     
     data[dataset][str(K)][algorithm] = {
         'lr': best_params['lr'],
-        'epochs': best_params['epochs'],
-        'll': best_params['ll']
+        'epochs': best_params['epochs']
     }
     
     with open(filename, 'w') as f:
@@ -137,6 +136,7 @@ def plot_data(x, dataset, cluster_centers=None):
     plt.axis('off')
     plt.tight_layout()
 
+    if not os.path.exists(f'results/{dataset}/'): os.makedirs(f'results/{dataset}/')
     plt.savefig(f"results/{dataset}/data.png", format='png', bbox_inches='tight')
 
 def plot_density_and_samples(experiments, dataset, K):
@@ -184,7 +184,7 @@ def plot_density_and_samples(experiments, dataset, K):
 
     plt.subplots_adjust(wspace=0.001, hspace=0.001)
     if not os.path.exists(f'results/{dataset}/'): os.makedirs(f'results/{dataset}/')
-    plt.savefig(f"results/{dataset}/densities_and_samples.png", format='png', bbox_inches='tight')
+    plt.savefig(f"results/{dataset}/{dataset}_{K}.png", format='png', bbox_inches='tight')
     
 def plot_logp(logps, dataset, K):
 

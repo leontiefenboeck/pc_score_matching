@@ -20,11 +20,11 @@ class GMM(nn.Module):
         self.chol_var = nn.Parameter(torch.eye(n_features).repeat(K, 1, 1))
 
     def forward(self, x):
-        log_likelihoods = torch.zeros(x.size(0), self.K, device=x.device)  # Ensure it's on the same device as x
+        log_likelihoods = torch.zeros(x.size(0), self.K, device=x.device) 
 
         for k in range(self.K):
             lower_triangular = torch.tril(self.chol_var[k])
-            var_k = lower_triangular @ lower_triangular.t() + 1e-6 * torch.eye(self.n_features, device=x.device)  # On the same device
+            var_k = lower_triangular @ lower_triangular.t() + 1e-6 * torch.eye(self.n_features, device=x.device)  
             log_probs = dist.MultivariateNormal(self.means[k], var_k).log_prob(x)
             log_likelihoods[:, k] = log_probs
 
@@ -43,13 +43,13 @@ class GMM(nn.Module):
         cat_dist = dist.Categorical(torch.softmax(self.pi, dim=-1))
         component_indices = cat_dist.sample((num_samples,))
 
-        samples = torch.zeros(num_samples, self.n_features, device=self.means.device)  # Ensure it's on the same device
+        samples = torch.zeros(num_samples, self.n_features, device=self.device)  
         for k in range(self.K): 
             mask = (component_indices == k)
             num_component_samples = mask.sum()
             
             if num_component_samples > 0:
-                var_k = self.chol_var[k] @ self.chol_var[k].t() + 1e-6 * torch.eye(self.n_features, device=self.means.device)  # On the same device
+                var_k = self.chol_var[k] @ self.chol_var[k].t() + 1e-6 * torch.eye(self.n_features, device=self.device)  
                 component_samples = dist.MultivariateNormal(self.means[k].float(), var_k.float()).sample((num_component_samples,))
                 samples[mask] = component_samples
 
@@ -60,8 +60,7 @@ class GMM(nn.Module):
 
         for k in range(self.K):
             var_k = self.chol_var[k] @ self.chol_var[k].t() + 1e-6 * torch.eye(self.n_features, device=x.device) 
-            mvn = dist.MultivariateNormal(self.means[k], var_k)
-            log_likelihoods[:, k] = mvn.log_prob(x)
+            log_likelihoods[:, k] = dist.MultivariateNormal(self.means[k], var_k).log_prob(x)
 
         weighted_log_likelihoods = log_likelihoods + torch.log(self.pi + 1e-10)
         log_likelihoods = torch.logsumexp(weighted_log_likelihoods, dim=1, keepdim=True)
