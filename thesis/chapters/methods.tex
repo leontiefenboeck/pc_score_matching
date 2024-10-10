@@ -3,144 +3,224 @@
 \chapter{Methods}
 \label{cha:methods}
 
-In this thesis I try to address the concerns discussed in the introduction by training 
+In this thesis we try to address the concerns discussed in the introduction by training 
 Probabilistic Circuits (PCs) through novel ways, specifically Score Matching (SM) and Sliced Score Matching (SSM).
-Then I compare results from these methods with results from convential methods to train PCs.\\
+Then we compare results from these methods with results from convential methods to train PCs, specifically Maximum Likelihood Estimation (MLE) using both Gradient Descent (GD) and Expectation Maximization (EM). \\
 
 \section{Creating a simple PC}
 \label{sec:simple_pc}
 
-Recall from section \ref{sec:pc} that the simplest variant a PC computes the weighted sum of arbitrary many input distributions. This is 
-called a Mixture Model and the graph of an example with just two input distributions is shown in Figure \ref{fig:spn_gmm}. 
+Recall from section \ref{sec:pc} that the simplest variant of a PC computes the weighted sum of two input distributions. This is 
+called a Mixture Model and the graph can be seen in Figure \ref{fig:spn_gmm}. If we expand this to a mixture 
+of $K$ components and use Gaussian distributions in the leaf nodes then we arrive at the Gaussian Mixture Model 
+discussed in Section \ref{sec:gmm} with the modelled density function from Equation \ref{eq:gmm}.
 
-If the input distributions are Gaussian then it would be called a Gaussian Mixture Model and the expression to calculate the 
-modelled density would be the following: 
+However when implementing this, we want to model the log-density $\log p_{\boldsymbol{\theta}}(\vec x)$ since it is easier to work with. So 
+we take the $\log$ of Equation \ref{eq:gmm}:
 
 \begin{equation}
-    p(\vec x) =  \prod_{s=1}^S \sum_{k=1}^K \pi_k \mathcal{N}(\vec x_s|\boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k) \\
-    \label{eq:gmm}
+    \log p_{\boldsymbol{\theta}}(\vec x) = \log \sum_{k=1}^K \pi_k \mathcal{N}(\vec x|\boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k) 
+    \label{eq:gmm_log}
 \end{equation}
 
-Where $S$ is the number of samples, $K$ is the number of components (distributions), $\pi_k$ the mixture weights and $\mathcal{N}(\vec x_s|\boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k)$ 
-a Gaussian component with mean $\boldsymbol{\mu}_k$ and covariance matrix $\boldsymbol{\Sigma}_k$.
-
-However since we need to model the log-density $\log p(\vec x)$ for numerical stability we need to take the log of expression \ref{eq:gmm}: 
-
-\begin{align}
-    \log p(\vec x) & = \log \left(\prod_{s=1}^S \sum_{k=1}^K \pi_k \mathcal{N}(\vec x_s|\boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k)\right) \notag \\
-    & =  \sum_{s=1}^S \log \left(\sum_{k=1}^K \pi_k \mathcal{N}(\vec x_s|\boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k)\right) 
-    \label{eq:gmm_logp}
-\end{align}
-
-Here the problem arises that calculating $\sum_{k=1}^K \pi_k \mathcal{N}(\vec x_s|\boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k)$ can 
-produce very small values and when taking the logarithm this can lead to numerical instability but it can be mitigated with the LogSumExp trick.
-First we take the exponential of the logarithm of the term inside the second sum. 
+We also want to calculate a single weighted Gaussian component in log-space, so inside the sum, we take 
+the exponential of the logarithm, which is valid since it would cancel out. See Appendix \ref{eq:log_mvn} for the expression
+to calculate the log-density of a Gaussian. 
 
 \begin{align}
-    & \sum_{k=1}^K \exp\left( \log \left( \pi_k \mathcal{N}(\vec x_s|\boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k) \right)\right) = \notag \\ 
-    & \sum_{k=1}^K \exp\left( \log (\pi_k) + \log (\mathcal{N}(\vec x_s|\boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k))\right)
-    \label{eq:log_exp}
+    \log p_{\boldsymbol{\theta}}(\vec x) & = \log \sum_{k=1}^K \exp \left( \log \left(\pi_k \mathcal{N}(\vec x|\boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k) \right) \right) \notag \\
+    & = \log \sum_{k=1}^K \exp \left( \log (\pi_k) + \log \left( \mathcal{N}(\vec x|\boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k) \right) \right)
+    \label{eq:gmm_log2}
 \end{align}
 
-This is valid, because $\exp (\log(x)) = x$, since exponential and logarithm cancel each other out.
-Plugging \ref{eq:log_exp} back into Equation \ref{eq:gmm_logp} yields the final numerically stable log density for our model. 
+To compute this exactly as in \ref{eq:gmm_log2}, we encounter a challenge where the calculation of exponentials, can lead to instability due to overflow or underflow \cite{logsumexp}. \\
+To address this, we use the \textbf{log-sum-exp (LSE)} trick:
+
+\[
+    \log \sum_{i=k}^K \exp(x_k) = C + \log \sum_{i=k}^K \exp(x_k - C)
+\]
+
+Introducing this constant $C$, where usually $C = \max_k (x_k)$, mitigates the underflow and overflow potential \cite{logsumexp}.
+
+Let $x_k = \log(\pi_k) + \log \left(\mathcal{N}(\vec x | \boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k)\right)$ and 
+let $C = \max_k \left( \log(\pi_k) + \log \left( \mathcal{N}(\vec x | \boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k) \right) \right) $ we can rewrite 
+\ref{eq:gmm_log2} to arrive at a final numerically stable expression: 
 
 \begin{equation}
-    \log p(\vec x) = \sum_{s=1}^S \log \sum_{k=1}^K \exp\left( \log \pi_k + \log \mathcal{N}(\vec x_s|\boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k)\right)
-    \label{eq:gmm_logp_final}
+    \log p_{\boldsymbol{\theta}}(\vec x) = C + \log \sum_{k=1}^K \exp\left( \log(\pi_k) + \log \left( \mathcal{N}(\vec x | \boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k) \right) - C \right)
+    \label{eq:gmm_log_final}
 \end{equation}
 
-I implemented this expression in python and used pytorch's torch.distributions.MultivariateNormal to compute the log density of a single 
-gaussian component $\mathcal{N}(\vec x_s|\boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k)$ and torch.logsumexp to calculate $\log \sum_{k=1}^K \exp()$.
+We implemented this expression in python and used pytorch's \cite{pytorch} torch.nn.Parameter 
+for all learnable parameters in $\boldsymbol{\theta}$ to use pytorch's optimization framework later.
 
-Now to train this model on some data we need to formulate a objective function and the corresponding optimization problem. In the conventional way of Maximum Likelihood Estimation
-(MLE) this is quite straight forward, since the objective function is exactly the density or in our case log density function 
-$\log p(\vec x)$ and the optimisation problem is formulated as the following: 
+We also used torch.distributions.MultivariateNormal to compute the log density of a single 
+gaussian component $\mathcal{N}(\vec x_s|\boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k)$ and torch.logsumexp
+for the LSE operation.  
 
-\begin{equation}
-    \max_{\substack{\boldsymbol \pi, \boldsymbol \mu, \boldsymbol \Sigma}} \log p(\vec x) = \sum_{s=1}^S \log \sum_{k=1}^K \exp\left( \log \pi_k + \log \mathcal{N}(\vec x_s;\boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k)\right)
+Note that for readability we will further refer to the whole density function of the GMM from \ref{eq:gmm_log_final} as just 
+$\log p_{\boldsymbol{\theta}}(\vec x)$.
+
+\subsection{Maximum Likelihood Estimation}
+\label{sec:gmm_mle}
+
+Now to train this GMM on some data $\vec X = \{\vec x_1,\vec  x_2 .. , \vec x_n\}$ in the convential way, we can calculate $\boldsymbol{\theta}$ using the 
+log Maximum Likelihood Estimation (MLE) objective from Equation \ref{eq:log_mle} in the Background chapter and include the density function
+of the GMM from Equation \ref{eq:gmm_log_final}:
+\begin{align}
+    \max_{\substack{\boldsymbol{\theta}}} \mathcal{L}(\boldsymbol{\theta}) = \sum_{i=1}^{N} \log p_{\boldsymbol{\theta}}(\vec x_i)
     \label{eq:gmm_objective}
-\end{equation}
+\end{align}
 
-In plain text this means maximizing $\log p(\vec x)$ with respect to the weights $\boldsymbol \pi$, the means $\boldsymbol \mu$ and the covariance matrices $\boldsymbol \Sigma$.
+In plain text this means maximizing $\sum_{i=1}^{N} \log p_{\boldsymbol{\theta}}(\vec x)$ with respect to $\boldsymbol{\theta}$, which consists of the weights $\boldsymbol \pi$, the means $\boldsymbol \mu$ and the covariance matrices $\boldsymbol \Sigma$.
 
-I implemented the optimization of this objective with Expectation Maximization (EM) and Gradient Descent using pytorch's 
-automatic differentiation capabilities. 
-Note that for Gradient Descent to work we instead need to minimize the negative log likelihood $- \log p(\vec x)$, 
-but this yields the same results as maximizing the log likelihood.
+Now with the objective formulated we will introduce Gradient Descent (GD) and Expectation Maximization (EM), which are learning algorithms
+that provide a concrete way on how the best possible $\boldsymbol{\theta}$ can be found. 
 
-\subsection{Training via Expectation Maximization}
-\label{sec:gmm_em}
-
-\subsection{Training via Gradient Descent}
+\subsubsection{Gradient Descent}
 \label{sec:gmm_sgd}
 
-\subsection{Training via Score Matching}
+Gradient Descent (GD) is an iterative optimization algorithm used to minimize a given objective function, by  
+computing the gradients of the function with respect to its parameters and updating them iteratively \cite{deepl}.
+
+Recall that however when training a GMM, the goal is to maximize the log-likelihood function defined in Equation \ref{eq:gmm_objective}. 
+So to do this using GD, we instead \textbf{minimize} the \textbf{negative} log-likelihood (NLL), which is equivalent.
+
+The main steps in applying GD to our GMM objective are: 
+
+1. \textbf{Computing the gradients} of the negative Log-Likelihood function $\mathcal{L}(\boldsymbol{\theta})$ for each parameter in $\boldsymbol{\theta}$: 
+\[
+    \nabla_{\boldsymbol{\theta}} \mathcal{L}(\boldsymbol{\theta}) = \nabla_{\boldsymbol{\theta}} (- \sum_{i=1}^{N} \log p_{\boldsymbol{\theta}}(\vec x))
+\]
+
+2. \textbf{Updating the parameters} using the computed gradients multiplied by a learning rate $\eta$:
+\[
+\theta^{(t+1)} = \theta^{(t)} + \eta \nabla_{\boldsymbol{\theta}} \mathcal{L}(\boldsymbol{\theta})
+\]
+
+We repeat this for $T$ training iterations, also often called Epochs. \\
+Note that for the first iteration the prameters $\boldsymbol{\theta}$ have to be initialized in some manner, e.g. randomly. 
+
+\begin{algorithm}
+    \caption{Gradient Descent}
+    \label{alg:gd_gmm}
+    \begin{algorithmic}[1]  
+        \Require $\vec X = \{\vec x_1, \vec x_2, ..., \vec x_N\}$, $\boldsymbol{\theta}$, $\eta$, $T$
+        \For{$t = 1$ to $T$}
+            \State $\mathcal{L}(\boldsymbol{\theta}) \gets - \sum_{i=1}^{N} \log p_{\boldsymbol{\theta}}(\vec x_i)$
+            \State $\boldsymbol{\theta} \gets \boldsymbol{\theta} + \eta \nabla_{\boldsymbol{\theta}} \mathcal{L}(\boldsymbol{\theta})$
+        \EndFor
+        \State \Return $\boldsymbol{\theta}$
+    \end{algorithmic}
+\end{algorithm}
+
+
+We implemeted this using pytorch's \cite{pytorch} autograd capabilities to compute the gradients.
+
+\newpage
+\subsubsection{Expectation Maximization}
+\label{sec:gmm_em}
+
+Expectation Maximization (EM) is another method used for iterative optimization, especially popular with Gaussian Mixture Models. EM achieves this by alternating between the \textbf{Expectation (E) step} and the \textbf{Maximization (M) step} \cite{ml_book}.
+
+1. \textbf{Expectation Step (E-Step):} In the E-step, we compute the posterior probability (also called responsibilities) that a given data point $\vec{x}_i$ belongs to each Gaussian component $k$:
+\[
+   \gamma_{ik} = \frac{\pi_k \mathcal{N}(\vec{x}_i|\boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k)}{\sum_{j=1}^{K} \pi_j \mathcal{N}(\vec{x}_i|\boldsymbol{\mu}_j, \boldsymbol{\Sigma}_j)}
+\]
+
+2. \textbf{Maximization Step (M-Step):} In the M-step, we update the parameters $\pi_k$, $\boldsymbol{\mu}_k$, and $\boldsymbol{\Sigma}_k$ based on the posterior probabilities from the E-step: 
+\[
+   \pi_k = \frac{1}{N} \sum_{i=1}^{N} \gamma_{ik}, \quad
+   \boldsymbol{\mu}_k = \frac{\sum_{i=1}^{N} \gamma_{ik} \vec{x}_i}{\sum_{i=1}^{N} \gamma_{ik}}, \quad
+   \boldsymbol{\Sigma}_k = \frac{\sum_{i=1}^{N} \gamma_{ik} (\vec{x}_i - \boldsymbol{\mu}_k)(\vec{x}_i - \boldsymbol{\mu}_k)^T}{\sum_{i=1}^{N} \gamma_{ik}}
+\]
+
+We again repeat this for $T$ training iterations, and initialize $\boldsymbol{\theta}$ for the first one.  \\
+
+\begin{algorithm}
+    \caption{Expectation Maximization}
+    \label{alg:em_gmm}
+    \begin{algorithmic}[1]  
+        \Require $\vec X = \{\vec x_1, \vec x_2, ..., \vec x_N\}$, $\boldsymbol{\theta}$, $T$
+        \For{$t = 1$ to $T$}
+            \For{$i = 1$ to $N$}
+                \For{$k = 1$ to $K$}
+                    \State $\gamma_{ik} \gets \frac{\pi_k \mathcal{N}(\vec{x}_i|\boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k)}{\sum_{j=1}^{K} \pi_j \mathcal{N}(\vec{x}_i|\boldsymbol{\mu}_j, \boldsymbol{\Sigma}_j)}$
+                \EndFor
+            \EndFor
+            \For{$k = 1$ to $K$}
+                \State $\pi_k \gets \frac{1}{N} \sum_{i=1}^{N} \gamma_{ik}$
+                \State $\boldsymbol{\mu}_k \gets \frac{\sum_{i=1}^{N} \gamma_{ik} \vec{x}_i}{\sum_{i=1}^{N} \gamma_{ik}}$
+                \State $\boldsymbol{\Sigma}_k \gets \frac{\sum_{i=1}^{N} \gamma_{ik} (\vec{x}_i - \boldsymbol{\mu}_k)(\vec{x}_i - \boldsymbol{\mu}_k)^T}{\sum_{i=1}^{N} \gamma_{ik}}$
+            \EndFor
+        \EndFor
+        \State \Return $\boldsymbol{\theta}$
+    \end{algorithmic}
+\end{algorithm}
+
+\subsection{Score Matching}
 \label{sec:gmm_sm}
 
-To train the simple PC from above using Score Matching recall 
-the objective function \ref{eq:sm_objective} from Section \ref{sec:sm}. 
-With it we can formulate the optimization problem: 
+Training the GMM with Score Matching is actually not very different from the MLE with Gradient Descent from above, we just need 
+to switch the objective function.  
+
+\subsubsection{Exact Score Matching}
+
+We take the Exact Score Matching objective function \ref{eq:sm_objective} from Section \ref{sec:sm} and formulate the optimization problem:
 
 \begin{equation}
-    \max_{\substack{\boldsymbol \theta}} \mathcal{J}(\theta) = \mathbb{E}_{p_d(x)} \left[\text{tr} \left( \nabla_x^2 \log p_\theta(x) \right) + \frac{1}{2} \left\| \nabla_x \log p_\theta(x) \right\|^2 \right]
+    \min_{\substack{\boldsymbol{\theta}}} \mathcal{L}(\boldsymbol{\theta}) = \mathbb{E}_{p_d(\vec x)} \left[\text{tr} \left( \nabla_{\vec x}^2 \log p_{\boldsymbol{\theta}}(\vec x) \right) + \frac{1}{2} \left\| \nabla_{\vec x} \log p_{\boldsymbol{\theta}}(\vec x) \right\|^2 \right]
     \label{eq:sm_optimization_problem}
 \end{equation}
 
-Here $\log p_m(.;\theta)$ is of course the log density of our model as described in \ref{eq:gmm_logp_final}. \\
-I used pytorch for the optimization with Gradient Descent. \\
-
-The exact step-by-step way I calculated $\mathcal{J}(\theta)$ can be seen in Algorithm \ref{alg:sm}.
+In the same manner as \ref{sec:gmm_sgd} we optimize this objective using Gradient Descent. 
 
 \begin{algorithm}
     \caption{Score Matching}
     \label{alg:sm}
     \begin{algorithmic}[1]  
-        \Require $\log p_m(.;\theta), \vec x$
-        \State $s_m(\vec x; \theta) \gets \nabla_x \log p_m(\vec x;\theta), \vec x$
-        \State $\mathcal{J} \gets x$
-        \State \Return $\mathcal{J}$
+        \Require $\vec X = \{\vec x_1, \vec x_2, ..., \vec x_N\}$, $\boldsymbol{\theta}$, $\eta$, $T$
+        \For{$t = 1$ to $T$}
+            \State $\mathcal{L}(\boldsymbol{\theta}) \gets \frac{1}{N} \sum_{i=1}^N \left( tr(\nabla_{\vec x_i}^2 \log p_{\boldsymbol{\theta}}(\vec x_i)) + \frac{1}{2} \left\| \nabla_{\vec x_i} \log p_{\boldsymbol{\theta}}(\vec x_i) \right\|^2 \right)$
+            \State $\boldsymbol{\theta} \gets \boldsymbol{\theta} + \eta \nabla_{\boldsymbol{\theta}} \mathcal{L}(\boldsymbol{\theta})$
+        \EndFor
     \end{algorithmic}
 \end{algorithm}
 
-
-To calculate the gradients as in $\text{grad}(\log p_m(\vec x;\theta), \vec x)$ I used torch.autograd.grad. 
-
-
-\subsection{Training via Sliced Score Matching}
+\subsubsection{Sliced Score Matching}
 \label{sec:gmm_ssm}
 
-Similar to Section \ref{sec:gmm_score_matching} we take the objective function \ref{eq:ssm_vr} from Section \ref{sec:ssm} and formulate
-the optimization problem:
+To use Sliced instead of Exact Score Matching we can do everything in the same way as above, we only need to replace 
+the objective function with the Sliced Score Matching objective from \ref{eq:ssm_vr}, Section \ref{sec:ssm}.
 
 \begin{equation}
     \min_{\substack{\boldsymbol \theta}}  \mathcal{J}(\theta; p_\vec{v}) = \mathbb{E}_{p_v} \mathbb{E}_{p_d} \left[ \vec{v}^T \nabla_\vec{x} s_\theta(\vec{x}) \vec{v} + \frac{1}{2} \norm{ s_\theta(\vec{x}) }^2_2 \right]
     \label{eq:ssm_optimization_problem}
 \end{equation}
 
-I again used pytorch for optimization with Gradient Descent and the exact computation of $\mathcal{J}(\theta; p_\vec{v})$ can be seen 
-in Algorithm \ref{alg:ssm}.
-
 \begin{algorithm}
     \caption{Sliced Score Matching}
     \label{alg:ssm}
     \begin{algorithmic}[1]  
-        \Require $\log p_m(.;\theta), \vec x$
-        \State $s_m(\vec x; \theta) \gets \nabla_x \log p_m(\vec x;\theta), \vec x$
-        \State $\mathcal{J} \gets x$
-        \State \Return $\mathcal{J}$
+        \Require $\vec X = \{\vec x_1, \vec x_2, ..., \vec x_N\}$, $\boldsymbol{\theta}$, $\eta$, $T$
+        \For{$t = 1$ to $T$}
+            \State $\mathcal{L}(\boldsymbol{\theta}) \gets \frac{1}{N} \sum_{i=1}^N \left( \vec{v}^T \nabla_\vec{x} s_\theta(\vec{x}) \vec{v} + \frac{1}{2} \norm{ s_\theta(\vec{x}) }^2_2 \right)$
+            \State $\boldsymbol{\theta} \gets \boldsymbol{\theta} + \eta \nabla_{\boldsymbol{\theta}} \mathcal{L}(\boldsymbol{\theta})$
+        \EndFor
     \end{algorithmic}
 \end{algorithm}
 
-\subsection{Sampling from a PC}
+We implented both Algorithms again using pytorch \cite{pytorch} autograd. 
+
+\subsection{Sampling}
 \label{sec:gmm_sampling}
 
 \section{Using more complex PCs}
 
-While the model proposed in Section \ref{sec:simple_pc} works well for relatively simple tasks like 2 dimensional density estimation 
-with not too complex distributions, it doesn't perform very well with complex higher dimensional data like images. 
+While the model proposed in Section \ref{sec:simple_pc} works well for relatively simple tasks like 2 dimensional density estimation
+it doesn't perform very well with complex higher dimensional data e.g. images. 
 
-So to get a wider variety of results I decided to also use a state-of-the-art framework for Probabilistic Circuits called 
-EinsumNetworks \cite{einsum} for modelling more complex higher dimensional datasets, especially images. 
+So to get a wider variety of results we decided to also use a state-of-the-art framework for Probabilistic Circuits called 
+EinsumNetworks \cite{einsum} for modelling more complex higher dimensional datasets. 
 
 For more details on how EinsumNetworks work please refer to the \cite{einsum} but in principle 

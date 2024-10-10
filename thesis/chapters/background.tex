@@ -7,67 +7,149 @@
 \chapter{Background}
 \label{cha:background}
 
+\section{Mathematical Notation}
+
+When talking about probability, random variables RVs are represented by large letters $X$ where one instance of that RV is represented 
+by small letters $x$. If $x$ is a multidimensional vector then we will write it bold $\vec x$ where $x = \{x_1, x_2, ... x_n\}$. 
+When talking about data, a whole dataset is denoted as $\vec X = \{x_1, x_2 .. , x_n\}$ where $N$ is the number of samples. 
+Note that $x_1, x_2$ and so on can also be multidimensional. In that case they will be denoted as $\vec x_1, \vec x_2$ etc..
+
+A desnity function of variable $x$ will be denoted as $p(x)$. If the density is parameterized by a parameter $\theta$ we will write 
+$p_\theta(x)$. If $\theta$ is a vector it will be written bold: $\boldsymbol{\theta}$.
+If we are talking about the density of some data, we will write $p_{data}(x)$ or simply $p_d(x)$.
+
 \section{Probabilistic Modelling}
 \label{sec:pm}
 
-At it's very core Machine Learning (ML) aims to create algorithms/programs that learn from data in order to reason about it, make future
-predictions or perform all kinds of different inference tasks. One possible way to achieve this, especially when there is an inherent 
-uncertainty in the data, which is the case for most real-world scenarios, is Probabilistic Modelling. In Probabilistic Modelling we 
-use probabilities to express this uncertainty and the rules of probability theory for inference. 
+At its core, \textbf{Machine Learning (ML)} aims to develop algorithms or programs that can learn from data to make informed decisions, predict future outcomes, or perform various inference tasks. 
+One powerful approach to this, especially when there is an inherent 
+uncertainty in the data -which is the case for most real-world scenarios- is \textbf{Probabilistic Modelling}.
+In Probabilistic Modelling, we use probabilities to represent this uncertainty and employ the rules of probability theory to carry out inference tasks \cite{pc_intro}.
 
-To make this more clear let's say we have some two dimensional data, from variables $X$ and $Y$ and assume that this data was drawn randomly from some unknown distribution. 
-We would call this distribution over all possible variables the joint distribution $P^*(X, Y)$. 
-If the distribution $P^*(X, Y)$ was known to us all inference tasks would boil down to applying the basic 
-rules of probability theory. The sum rule to compute marginals, the product rule to compute conditionals and more complex rules, derived 
-from these two, to perform harder inference tasks. 
+\subsection{Probability Basics}
+\label{sec:prob_basics}
 
-However since we don't know $P^*(X, Y)$, we have to do something different.
-Through machine learning we create a framework that \emph{models} $P(X, Y)$, approximating the unknown true distribution $P^*(X, Y)$, of which we only have limited samples.
-We would call a framework, that models the joint distribution a Generative Probabilistic Model. 
-After \emph{learning} this model trough the data, which is usually done via Maximum Likelihood Estimation, we can again perform inference using the rules 
-of probability theory. And if the model approximates the true distribution close enough we can expect reliable results. \cite{pc_intro}. \\
+To clarify these ideas let's say we have two random variables $X$ and $Y$, that can take instances $x$ and $y$. 
+If we know how the probabilities are distributed over all possible pairs of outcomes $(x, y)$, we know the \textit{joint probability distribution} $p(x, y)$.
+For \textit{discrete} random variables, this joint distribution is described by a \textit{probability mass function} (PMF). 
+For \textit{continuous} random variables, it is described by a \textit{probability density function} (PDF).
+Since we commonly deal with continuous variables in ML, we will focus on densities going forward.
 
-TODO: explain MLE shortly
+For any function to be a valid or proper density it has to fulfill two properties. 
+It has to be non-negative $p(x) \geq 0$ for all $x$
+and it has to be normalized so that the total area under the function equals $1$, i.e. it has to integrate to $1$ over the entire space: $\int_{-\infty}^{\infty} p(x) \, dx = 1$.
 
-Before continuing with different approaches to probabilistic modelling, I want to introduce two key concepts that are often 
-used to discuss these different methods. \\
+Having access to such a valid joint density function, allows us to perform basically all key tasks that we want to accomplish in machine learning. 
+We can sample from the distribution to generate new datapoints, for example to generate images, we can predict by evaluating the density at a specific point and 
+we can compute more complex inference tasks by using rules from probability theory, like for example the marginal probability (MAR) or 
+the conditional probability (CON) \cite{pc_intro}.
 
-TODO: expressiveness as in expressive efficiency
+\subsection{Modelling a Density}
+\label{sec:modelling_a_density}
 
-Definition 1: Expressiveness - a probabilistic model is called expressive if the learned distribution approximates the original distribution to a high degree.
-For instance this can be measured with Kullback-Leibler (KL) divergence \cite{kl_divergence}, which measures how similar two probability distributions are. 
-Two identical distributions would then have a KL-divergence of $0$. In the Probabilistic Modelling case a KL-divergence of 0 would mean that the model is most exxpressive. \\
+In a real-world machine learning scenario, we typically don't have access to any density functions, intstead 
+we are given some data. With probabilistic modelling we assume that the given data $\vec X = \{x_1, x_2 .. , x_n\}$ was generated by an unknown density function $p^*(x)$ (p-star).
+Finding this $p^*(x)$ can be seen as the holy grail in machine learning, because if it was known to us all inference tasks would reduce to simply applying the 
+rules of probability theory \cite{pc_intro}.
 
-Definition 2: Tractability - a probabilistic model is called tractable with respect to an inference task, if the model can complete this 
-task exactly and efficiently. Exactly in this case means without relying on approximation e.g. Monte-Carlo Simulation and efficiently 
-means in linear time with respect to the model size. \\
+However since we don't know $p^*(x)$, we have to do something different.
+We create a parameterized model $p_\theta(x)$ and using the data we tune the parameter $\theta$ so that $p_\theta(x)$ approximates $p^*(x)$ as closely as possible.
+
+One of the most basic yet widely used methods for learning such a model is Maximum Likelihood Estimation (MLE) \cite{ml_book}. 
+In principle, MLE is straightforward: we tune $\theta$ so that the likelihood of the observed data is maximized under the model.
+Specifically we \emph{maximize the likelihood} (the output of the model) of each datapoint in $\vec X$ with respect to $\theta$, as 
+expressed in Equation \ref{eq:mle}: 
+
+\begin{equation}
+    \max_{\theta} \mathcal{L}(\theta) = \prod_{i=1}^{N} \log p_\theta(x_i)
+    \label{eq:mle}
+\end{equation}
+
+Where $\mathcal{L}(\theta)$ is usually referred to as the \emph{Likelihood Function}.
+
+It is notworthy that instead of modelling $p_\theta(x)$, most of the time we want to model $\log p_\theta(x)$ because it typically is easier to work with. 
+So instead of maximizing the Likelihood we maximize the Log-Likelihood, turning Equation \ref{eq:mle} into the following:
+
+\begin{equation}
+    \max_{\theta} \mathcal{L}(\theta) = \log \prod_{i=1}^{N} p_\theta(x_i) = \sum_{i=1}^{N} \log p_\theta(x_i)
+    \label{eq:log_mle}
+\end{equation}
+
+Here $\mathcal{L}(\theta)$ is now referred to as the \emph{Log-Likelihood Function}. 
+
+After learning a model using MLE we can again perform inference using the rules of probability. 
+
+\subsection{Tractability vs. Expressiveness}
+
+Before continuing with different ways of constructing such a model, we want to introduce two key concepts that are often 
+used to discuss these models. 
+
+\begin{definition} [Expressiveness]
+    Expressiveness refers to the ability of a model to approximate different sets of distributions $p^*$ to a high degree. If model A can approximate a set of 
+    distributions well, but model B can also model this set to the same degree plus additional distributions, then B would be more expressive than A.
+    However normally this term is used as in expressive efficiency, so how complex a model must be to be expressive.  For instance, if both models A and B can approximate the same set of distributions with equal effectiveness, but model B does so with significantly less complexity, then model B is regarded as more expressive (efficient).  \cite{pc_intro}
+\end{definition}
+
+\begin{definition}[Tractability]
+    A probabilistic model is called tractable with respect to an inference task, if the model can complete this 
+    task exactly and efficiently. Exactly in this case means without relying on approximation and efficiently 
+    means in linear time with respect to the model size. \cite{pc_intro}
+\end{definition}
 
 In recent years expressive capability has increased considerably through models based on neural networks like Generative-Adversarial
 Networks (GANs) \cite{gan}, Variational Autoencoder (VAE) \cite{vae} and many others. However for what these models excel in generating 
-very realistic images or compelling text in language modelling, they lack in tractability for all except the most simplest inference tasks. 
-\cite{pc_intro} \\
+very realistic images or compelling text, they lack in tractability for all except the simplest inference tasks
+\cite{pc_intro}. \\
 
-On the other hand there are many mostly older, less complex models like Gaussian Mixture Models (GMMs), Hidden Markos Models (HMMs) and so on, 
-that lack in expressiveness and only work well enough for very simple data but can compute most if not all inference tasks tractably.
+On the other hand there are many, mostly older, less complex models like Gaussian Mixture Models (GMMs), Hidden Markos Models (HMMs) and so on, 
+that lack in expressiveness and only work well enough for simple data but can compute most if not all inference tasks tractably.
+
+\section{Gaussian Mixture Model}
+\label{sec:gmm}
+
+The already mentioned Gaussian Mixture Model (GMM) \cite{ml_book} is a very foundational yet popular probabilistic model that will serve as good groundwork 
+going forward, in fact a Probabilistic Circuit can fundamentally be seen as a \emph{deep} (gaussian) mixture model. 
+
+The basic idea of a GMM is that a single Gaussian density can't model very many distributions, in fact a single Gaussian 
+can only model, well a single Gaussian, but \emph{mixing} many Gaussians together can produce a very capable density estimator. 
+
+In a GMM, this mixing refers to calculating a weighted sum of multiple Gaussian components, each representing a different Gaussian distribution. 
+The probability density function of a multivariate GMM is given by Equation \ref{eq:gmm}.
+
+\begin{equation}
+    p_{\boldsymbol{\theta}}(\vec x) =  \sum_{k=1}^K \pi_k \mathcal{N}(\vec x|\boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k) 
+    \label{eq:gmm}
+\end{equation}
+
+In this equation, $K$ is the number of Gaussian components in the mixture, and $\pi_k$ is the mixture weight associated with the $k$-th component, where $\sum_{k=1}^K \pi_k = 1$, ensuring that the model 
+ouputs a normalized density. $\mathcal{N}(\vec x|\boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k)$ represents one single Gaussian component with mean $\boldsymbol{\mu}_k$ and 
+covariance matrix $\boldsymbol{\Sigma}_k$. This component is calculated using the well known multivariate gaussian density function, see Appendix Equation \ref{eq:mvn}.
+$\boldsymbol{\theta}$ refers to the parameter vector, where $\boldsymbol{\theta} = {\boldsymbol{\pi}, \boldsymbol{\mu}, \boldsymbol{\Sigma}}$
+
+We call $\boldsymbol{\theta}$ the learnable parameters and $K$ the hyperparameter of the model.
 
 \section{Probabilistic Circuits}
 \label{sec:pc}
 
-Probabilistic Circuit (PC) is an umbrella term for probabilistic models that can perform most inference tasks tractably but can be 
+Probabilistic Circuit (PC) \cite{pc_intro} is an umbrella term for probabilistic models that can perform most inference tasks tractably but can be 
 highly expressive at the same time. In general this is achieved by only introducing complexity in a structured manner. More specifically
 for a PC to be valid it has to adhere to certain structural properties, but more on that later. \\
 
 Prominent members of the PC class include Cutset Networks \cite{cutset}, Probabilistic
-Sentential Decision Diagrams (PSDDs) \cite{psdd}, but I will only be focusing on Sum Product Networks (SPNs) \cite{spn}, which to my 
-knowledge has seen the widest adoption. 
+Sentential Decision Diagrams (PSDDs) \cite{psdd} and others, but we will only be focusing on Sum Product Networks (SPNs) \cite{spn}, which to our 
+knowledge has seen the widest adoption and a lot of the times actually a SPN is meant when talking about PCs. However continuing on, we will only talk about 
+PCs but often you could use PC and SPN interchangeably. 
 
-In General one can think of a SPN as a structured neural network that consists of leaf nodes, sum nodes and product 
-nodes. A SPN then recursively computes weighted mixtures (sum nodes) and factorizations (product nodes) of simple input distributions (leaf nodes). 
+In General one can think of a PC as a structured neural network that consists of leaf nodes, sum nodes and product 
+nodes. A PC then recursively computes weighted mixtures (sum nodes) and factorizations (product nodes) of simple input distributions (leaf nodes). 
 These inputs can basically be any probability distribution like Gaussians, Bernoullies, Categroical distributions and so on,
-however most of the time we will talk about Gaussians.
+however most of the time we will talk about Gaussians \cite{pc_intro}.
 
-Considering this, one could notice that the simplest form of a SPN is just a basic 
-Gaussian Mixture Model (GMM), where one sum node mixes two leaf nodes, as depicted in Figure~\ref{fig:spn_gmm}.
+Note that if the leaf distributions have normalized density functions and the weights of the PC are
+normalized correctly then the whole PC also models a normalized density \cite{pc_intro}.
+
+Considering this, as already hinted at, one could notice that the simplest form of a PC is just a basic
+Gaussian Mixture Model, where one sum node mixes two leaf nodes, which graphically can be depicted as in Figure~\ref{fig:spn_gmm}.
 
 \begin{figure}[h!]
     \centering
@@ -77,20 +159,20 @@ Gaussian Mixture Model (GMM), where one sum node mixes two leaf nodes, as depict
         input/.style={circle, draw=black, thick, minimum size=8mm, inner sep=0pt}
     ]
 
-    % Nodes
     \node[input] (input1) {$X_1$};
     \node[input, right=of input1] (input2) {$X_1$};
     \node[sum, above=1.5cm of $(input1)!0.5!(input2)$] (sum) {$+$};
 
-    % Edges
     \draw[-, thick] (input1) -- node[midway,left] {$w_1$} (sum);
     \draw[-, thick] (input2) -- node[midway,right] {$w_2$} (sum);
 
     \end{tikzpicture}
-    \caption{Simplest SPN}
+    \caption{Simplest PC - GMM}
     \label{fig:spn_gmm}
 \end{figure}
-Furthermore an only slightly more complex SPN with a product node and two sum node can be seen in Figure~\ref{fig:spn_layered}. 
+
+Furthermore more complex PCs can be created by introducing mixtures of mixtures and mixtures of mixtures of mixtures and so on, deepening the model stucture.
+An only slightly more complex PC with a product node and two sum nodes can be seen in Figure~\ref{fig:spn_layered}. 
 
 \begin{figure}[h!]
     \centering
@@ -101,7 +183,6 @@ Furthermore an only slightly more complex SPN with a product node and two sum no
         product/.style={circle, draw=black, thick, minimum size=8mm, inner sep=0pt}
     ]
 
-    % Nodes
     \node[input] (input1) {$X_1$};
     \node[input, right=of input1] (input2) {$X_1$};
     \node[input, right=of input2] (input3) {$X_2$};
@@ -112,7 +193,6 @@ Furthermore an only slightly more complex SPN with a product node and two sum no
     
     \node[product, above=1.5cm of $(sum1)!0.5!(sum2)$] (prod) {$\times$};
 
-    % Edges
     \draw[-, thick] (input1) -- node[midway,left] {$w_1$} (sum1);
     \draw[-, thick] (input2) -- node[midway,right] {$w_2$} (sum1);
     
@@ -123,14 +203,12 @@ Furthermore an only slightly more complex SPN with a product node and two sum no
     \draw[-, thick] (sum2) -- (prod);
 
     \end{tikzpicture}
-    \caption{Simple SPN}
+    \caption{Simple PC}
     \label{fig:spn_layered}
 \end{figure}
 
-Altough this is still very very basic it is a great starting point to intruduce and make sense of two central structural 
-properties that allows SPNs to be expressive and tractable. 
-
-In the following Definitions PC and SPN can be used interchangebly.
+Altough this is still very very basic it is a great starting point to introduce and make sense of two central structural 
+properties that allow PCs to be expressive and tractable. 
 
 \begin{definition}[Scope]
     If a PC $P$ models the joint distribution of a set of variables $\vec{X}$, each node of $P$ models a distribution over a subset of $\vec{X}$.
@@ -146,120 +224,110 @@ In the following Definitions PC and SPN can be used interchangebly.
 \end{definition}
 
 In simple terms this basically means that sum nodes are only allowed to have inputs over the same variable and product nodes are
-only allowed to have inputs over different variables. The two depicted SPNs are smooth and decomposable.
+only allowed to have inputs over different variables. The two depicted PCs are smooth and decomposable.
 
-There are more structural properties that a SPN or PC can fullfill, however these two already guarantee tractable computation of 
-marginals (MAR) and conditionals (CON)\cite{pc_intro}, which many other models cannot do and which already is quite enough in many scenarios. 
-Generally the more structure a PC has, which means more structural properties it must fulfill, the more inference tasks it can compute 
+There are more structural properties that a PC can fullfill, however these two already guarantee tractable computation of the central
+marginal (MAR) and conditional (CON) queries \cite{pc_intro}, which is already sufficient for many scenarios. 
+Generally the more structure a PC has, which means the more structural properties it must fulfill, the more inference tasks it can compute 
 tractably. 
 
 In \cite{pc_intro} there is an in depth explanation, why these properties guarantee tractable inference 
 and further discussion on other properties.
 
-Using a SPN in a real-world scenario then would bacisally entail first deciding on a structure (which properties and leaf 
+Using a PC in a real-world scenario then would bacisally entail first deciding on a structure (which properties and leaf 
 distributions to use and how the nodes should be aranged in the graph) depending on the task at hand and then do a Maximum Likelihood 
-Estimation with the weights of the sum nodes and the parameters of the leaf distributions (e.g. means and variances for a Gaussian). 
-This omptimization is usually done via Gradient Descent or the Expectation-Maximization (EM) algorithm, 
-which is also very popular with Gaussian Mixture Models. 
-
-It is also noteworthy here that a SPN is a normalized model, which means it models a proper density (that integrates to $1$ over the entire real space). 
-This makes the omptimization with Maximum Likelihood very straightforward as the model directly outputs the Likelihood when evaluated at one datapoint.
-Therefore we can just minimize the negative of this output, in turn maximizing the Likelihood.
-Though normally, as with most models, we model the log-likelihood for numerical stability.
-
+Estimation, where $\theta$ is composed of the weights of the sum nodes and the parameters of the leaf distributions (e.g. means and variances for a Gaussian). 
+This omptimization is usually done via Gradient Descent or the Expectation-Maximization (EM) algorithm. More details will follow later in Section \ref{sec:simple_pc}.
 
 \section{Score Matching}
 \label{sec:sm}
 
-TODO: change notatioon of p and s
-
 Score Matching \cite{sm} is a concept that is normally used when dealing with unnormalized models like Energy Based Models (EBMs). Here 
-Energy typically just refurs to an unnormalized density. It is noteworthy, that most models represent unnormalized densities, 
-because usually there is not a straightforward way to ensure that the model outputs a proper density.
+Energy typically just refers to an unnormalized log-density $\log p(x)$. 
 Learning these models through Maximum Likelihood Estimation can be difficult because of the computationally infeasible normalization 
-constant, usually called $Z_\theta$.
+constant, usually called $Z_\theta$ \cite{sm}. Recall that GMMs and PCs can represent normalized densities, nullifying this issue. \\
 
-
-In Equation\ref{eq:pdf} the relation between a parameterized density $p_\theta$ and an Energy $E_\theta$ is expressed. Notice that calculating the normalization constant would 
-mean computing the integral over $E_\theta$.
-
+In Equation \ref{eq:pdf} the relation between a parameterized density $p_\theta$ and an Energy $E_\theta$ is expressed. 
 \begin{equation}
     \label{eq:pdf}
     p_\theta(\vec x) = \frac{e^{-E_\theta(\vec x)}}{Z_\theta}
-\end{equation}
+\end{equation} 
 
-Score Matching proposes a workaround by working with the log gradient $\nabla_x \log \ p_\theta(\vec x)$ of the density, 
-instead of $p_\theta(\vec x)$. \\
+Calculating the normalization constant would mean computing the integral over $E_\theta$: 
+\[
+    Z_\theta = \int e^{-E_\theta(\vec{x})} \, d\vec{x}
+\]
+which is the source of the computational infeasability. \\
 
-Calculating $\nabla_x \log p_\theta(\vec x)$ results in $- \nabla_x E_\theta(\vec x)$ since 
-\[\nabla_x \log p_\theta(\vec x) = \nabla_x \log \ \frac{e^{- E_\theta(\vec x)}}{Z_\theta} = \nabla_x \left( - E_\theta(\vec x) - {Z_\theta} \right) = - \nabla_x E_\theta(\vec x)\]
-thus removing $Z_\theta$.\\
+Score Matching proposes a workaround by working with the gradient log of the density, 
+instead of $p_\theta(\vec x)$, since calculating $\nabla_x \log p_\theta(\vec x)$ removes $Z_\theta$ from the computation:
+\[
+    \nabla_x \log p_\theta(\vec x) = \nabla_x \log \ \frac{e^{- E_\theta(\vec x)}}{Z_\theta} = \nabla_x \left( - E_\theta(\vec x) - {Z_\theta} \right) = - \nabla_x E_\theta(\vec x)
+\] 
 
-$\nabla_x \log p_\theta(\vec x)$ is called the score function giving score matching it's name.
-Using the score which I will further refer to as $s_\theta$ the author of \cite{sm} proposes to minimize the Fisher Divergence between 
-the scores of the data and the scores of the model, defined as 
+$\nabla_x \log p_\theta(\vec x)$ is called the score function, giving score matching it's name.
+Using the score which we will further refer to as $s_\theta$ the author of \cite{sm} proposes to minimize the Fisher Divergence between 
+the scores of the data and the scores of the model, resulting in the following objective function: 
 
 \begin{equation}
     \label{eq:fisher}
-    J(\theta) = \frac{1}{2} \mathbb{E}_{p_d(x)} \left[ \norm{s_\theta(x) - s_d(x)}^2_2 \right]
-\end{equation}
+    \mathcal{L}(\theta) = \frac{1}{2} \mathbb{E}_{p_d} \left[ \norm{s_\theta(x) - s_d(x)}^2_2 \right]
+\end{equation} \\
 
-as the objective function. Here $p_d$ and $s_d$ refer to the density of the data and the score of the data respectively.
-
-This objective doesn't depend on the intractable normalization constant, however it depends on the score function of the data 
-$s_d(x)$ which is unknown. Furthermore in \cite{sm} it is shown that by partial integration this objective function can be expressed as 
+This objective doesn't depend on the intractable normalization constant, however it introduces another problem since it depends on the scores of the data 
+$s_d(x)$, which is unknown. Furthermore in \cite{sm} it is shown that by partial integration this objective function can be expressed as:
 
 \begin{align}
     \label{eq:sm_objective}
-    \mathcal{J}(\theta) & = \mathbb{E}_{p_d} \left[\text{tr} \left( \nabla_x s_\theta(x) \right) + \frac{1}{2} \left\| s_\theta(x) \right\|^2 \right] \notag \\ 
-    & = \mathbb{E}_{p_d(x)} \left[\text{tr} \left( \nabla_x^2 \log p_\theta(x) \right) + \frac{1}{2} \left\| \nabla_x \log p_\theta(x) \right\|^2 \right]
+    \mathcal{L}(\theta) & = \mathbb{E}_{p_d} \left[\text{tr} \left( \nabla_x s_\theta(x) \right) + \frac{1}{2} \left\| s_\theta(x) \right\|^2 \right]
 \end{align}
 
-which is equivalent to \ref{eq:fisher} plus some additive constant. This final score matching objective doesn't depend on the score of the data $s_d$ anymore and can be used for learning. Here tr() refers to the
+which is equivalent to \ref{eq:fisher} plus some additive constant. Here $tr()$ refers to the
 trace (sum of the diagonals) of the hessian matrix.
+ 
+This final score matching objective doesn't depend on the score of the data $s_d$ anymore and can be used for learning.
 
 \section{Sliced Score Matching}
 \label{sec:ssm}
 
-TODO: change notatioon of p and s
-
-While Score Matching get's rid of the normalization constant $Z_\theta$ as seen above, it introduces another term that can become hard
+While Score Matching get's rid of the normalization constant $Z_\theta$, it introduces another term that can become hard
 to compute. To calculate the trace of the hessian in Equation \ref{eq:sm_objective} one derivation needs to be computed for each diagonal element of the hessian.
 This basically means that the number of derivations needed equals the dimension of the data. 
 While this is fine for low dimensional data it quickly becomes unfeasible when
-learning higher dimensional data like images.  
+learning higher dimensional data, for instance images.  
 
-In Sliced Score Matching (SSM) \cite{ssm} the basic idea is to project the high dimensional data onto some random direction $v$ to reduce 
+In Sliced Score Matching (SSM) \cite{ssm} the basic idea is to project the high dimensional data onto a random direction $v$ to reduce 
 the dimensionality and solve a lower dimensional problem. The number of random directions aka. slices can range from $1$ upward, but 
 most of the time $1$ slice should suffice. 
 
-Applying this idea results in the following objective replacing Fisher Divergence from Equation \ref{eq:fisher}: 
+Applying this idea results in the following objective replacing Fisher Divergence from Equation \ref{eq:fisher} \cite{ssm}: 
 
 \begin{equation}
     \label{eq:ssm}
-    \mathcal{J}(\theta; p_v) = \frac{1}{2} \mathbb{E}_{p_v} \mathbb{E}_{p_d} \left[ \left( \vec{v}^T s_\theta(x) - \vec{v}^T s_d(x) \right)^2 \right]
+    \mathcal{L}(\theta; p_v) = \frac{1}{2} \mathbb{E}_{p_v} \mathbb{E}_{p_d} \left[ \left( \vec{v}^T s_\theta(x) - \vec{v}^T s_d(x) \right)^2 \right]
 \end{equation}
 
 By using partial integration, similar to what was done in Score Matching, we can get rid of the unkown scores of the data $s_d$:
 
 \begin{equation}
     \label{eq:ssm_final}
-    \mathcal{J}(\theta; p_\vec{v}) = \mathbb{E}_{p_v} \mathbb{E}_{p_d} \left[ \vec{v}^T \nabla_\vec{x} s_\theta(\vec{x}) \vec{v} + \frac{1}{2} \left( \vec{v}^T s_\theta(\vec{x}) \right)^2 \right]
+    \mathcal{L}(\theta; p_\vec{v}) = \mathbb{E}_{p_v} \mathbb{E}_{p_d} \left[ \vec{v}^T \nabla_\vec{x} s_\theta(\vec{x}) \vec{v} + \frac{1}{2} \left( \vec{v}^T s_\theta(\vec{x}) \right)^2 \right]
 \end{equation}
 
-which is again equivalent to \ref{eq:ssm} plus some additive constant \cite{ssm}. This objective can be used for learning, however
+which is again equivalent to \ref{eq:ssm} plus some additive constant \cite{ssm}. 
+
+This objective can be used for learning, however
 it is worth to point out that when $p_v$ is a multivariate standard normal or multivariate Rademacher distribution, 
 $\mathbb{E}_{p_v} [ ( \vec{v}^T s_\theta(\vec{x}) )^2 ] = \norm{s_\theta(\vec{x})}_2^2$ in which case the second term 
 of \ref{eq:ssm_final} can be integrated analytically \cite{ssm}, yielding the following objective.
 
 \begin{equation}
     \label{eq:ssm_vr}
-    \mathcal{J}(\theta; p_\vec{v}) = \mathbb{E}_{p_v} \mathbb{E}_{p_d} \left[ \vec{v}^T \nabla_\vec{x} s_\theta(\vec{x}) \vec{v} + \frac{1}{2} \norm{ s_\theta(\vec{x}) }^2_2 \right]
+    \mathcal{L}(\theta; p_\vec{v}) = \mathbb{E}_{p_v} \mathbb{E}_{p_d} \left[ \vec{v}^T \nabla_\vec{x} s_\theta(\vec{x}) \vec{v} + \frac{1}{2} \norm{ s_\theta(\vec{x}) }^2_2 \right]
 \end{equation}
 
 The authors of \cite{ssm} refer to this objective as 
-Sliced Score Matching with Reduced Variance (SSM-VR), which according to them produces better performance than the standard SSM objective as 
-in \ref{eq:ssm_final}.
+Sliced Score Matching with Reduced Variance (SSM-VR), which according to them produces better performance than the standard SSM objective from \ref{eq:ssm_final}.
 
 
 
