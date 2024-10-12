@@ -11,8 +11,8 @@
 
 When talking about probability, random variables RVs are represented by large letters $X$ where one instance of that RV is represented 
 by small letters $x$. If $x$ is a multidimensional vector then we will write it bold $\vec x$ where $x = \{x_1, x_2, ... x_n\}$. 
-When talking about data, a whole dataset is denoted as $\vec X = \{x_1, x_2 .. , x_n\}$ where $N$ is the number of samples. 
-Note that $x_1, x_2$ and so on can also be multidimensional. In that case they will be denoted as $\vec x_1, \vec x_2$ etc..
+When talking about data, a whole dataset is denoted as $X = \{x_1, x_2 .. , x_n\}$ where $N$ is the number of samples. 
+Note that $x_1, x_2$ and so on can also be multidimensional. In that case they will be denoted as $\vec x_1, \vec x_2$ etc. and $X$ will we be $\vec X$.
 
 A desnity function of variable $x$ will be denoted as $p(x)$. If the density is parameterized by a parameter $\theta$ we will write 
 $p_\theta(x)$. If $\theta$ is a vector it will be written bold: $\boldsymbol{\theta}$.
@@ -267,25 +267,30 @@ instead of $p_\theta(\vec x)$, since calculating $\nabla_x \log p_\theta(\vec x)
 
 $\nabla_x \log p_\theta(\vec x)$ is called the score function, giving score matching it's name.
 Using the score which we will further refer to as $s_\theta$ the author of \cite{sm} proposes to minimize the Fisher Divergence between 
-the scores of the data and the scores of the model, resulting in the following objective function: 
+the scores of the data and the scores of the model: 
 
 \begin{equation}
     \label{eq:fisher}
     \mathcal{L}(\theta) = \frac{1}{2} \mathbb{E}_{p_d} \left[ \norm{s_\theta(x) - s_d(x)}^2_2 \right]
 \end{equation} \\
 
-This objective doesn't depend on the intractable normalization constant, however it introduces another problem since it depends on the scores of the data 
-$s_d(x)$, which is unknown. Furthermore in \cite{sm} it is shown that by partial integration this objective function can be expressed as:
+This doesn't depend on the intractable normalization constant, however it introduces another problem since it depends on the scores of the data 
+$s_d(x)$, which is unknown. Furthermore it is shown that by partial integration the expression can be rewritten as \cite{sm}:
 
-\begin{align}
-    \label{eq:sm_objective}
-    \mathcal{L}(\theta) & = \mathbb{E}_{p_d} \left[\text{tr} \left( \nabla_x s_\theta(x) \right) + \frac{1}{2} \left\| s_\theta(x) \right\|^2 \right]
-\end{align}
+\begin{equation}
+    \mathcal{L}(\theta) = \mathbb{E}_{p_d} \left[\text{tr} \left( \nabla_x s_\theta(x) \right) + \frac{1}{2} \left\| s_\theta(x) \right\|^2 \right]
+\end{equation}
 
 which is equivalent to \ref{eq:fisher} plus some additive constant. Here $tr()$ refers to the
 trace (sum of the diagonals) of the hessian matrix.
  
-This final score matching objective doesn't depend on the score of the data $s_d$ anymore and can be used for learning.
+This final score matching objective doesn't depend on the score of the data $s_d$ anymore. To use it to train a model on some 
+data $X = \{x_1, x_2, x_n\}$ we can formulate the following unbiased estimator \cite{sm}: 
+
+\begin{align}
+    \label{eq:sm_objective}
+    \mathcal{L}(\theta) = \frac{1}{N} \sum_{i=1}^{N} \left(\text{tr} \left( \nabla_{x_i} s_\theta(x_i) \right) + \frac{1}{2} \left\| s_\theta(x_i) \right\|^2 \right)
+\end{align}
 
 \section{Sliced Score Matching}
 \label{sec:ssm}
@@ -316,20 +321,21 @@ By using partial integration, similar to what was done in Score Matching, we can
 
 which is again equivalent to \ref{eq:ssm} plus some additive constant \cite{ssm}. 
 
-This objective can be used for learning, however
+This objective can be used, however
 it is worth to point out that when $p_v$ is a multivariate standard normal or multivariate Rademacher distribution, 
 $\mathbb{E}_{p_v} [ ( \vec{v}^T s_\theta(\vec{x}) )^2 ] = \norm{s_\theta(\vec{x})}_2^2$ in which case the second term 
 of \ref{eq:ssm_final} can be integrated analytically \cite{ssm}, yielding the following objective.
 
 \begin{equation}
-    \label{eq:ssm_vr}
     \mathcal{L}(\theta; p_\vec{v}) = \mathbb{E}_{p_v} \mathbb{E}_{p_d} \left[ \vec{v}^T \nabla_\vec{x} s_\theta(\vec{x}) \vec{v} + \frac{1}{2} \norm{ s_\theta(\vec{x}) }^2_2 \right]
 \end{equation}
 
 The authors of \cite{ssm} refer to this objective as 
 Sliced Score Matching with Reduced Variance (SSM-VR), which according to them produces better performance than the standard SSM objective from \ref{eq:ssm_final}.
 
+To again use this for training with data $X = \{x_1, x_2, x_n\}$ and $M$ random vectors $\vec v_{ij}$ for each datapoint we can formulate an estimator \cite{ssm}:
 
-
-
-
+\begin{equation}
+    \label{eq:ssm_vr}
+    \mathcal{L}(\theta) = \frac{1}{N} \frac{1}{M} \sum_{i=1}^{N} \sum_{j=1}^{M} \left( \vec{v}_{ij}^T \nabla_{\vec x_i} s_{\theta}(\vec x_i) \vec{v}_{ij} + \frac{1}{2} \norm{ s_{\theta}(\vec x_i) }^2_2 \right)
+\end{equation}

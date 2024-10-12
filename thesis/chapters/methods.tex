@@ -1,4 +1,5 @@
 \renewcommand{\vec}[1]{\textbf{#1}}
+\renewcommand{\norm}[1]{\left\lVert#1\right\rVert}
 
 \chapter{Methods}
 \label{cha:methods}
@@ -114,10 +115,8 @@ Note that for the first iteration the prameters $\boldsymbol{\theta}$ have to be
     \end{algorithmic}
 \end{algorithm}
 
-
 We implemeted this using pytorch's \cite{pytorch} autograd capabilities to compute the gradients.
 
-\newpage
 \subsubsection{Expectation Maximization}
 \label{sec:gmm_em}
 
@@ -158,6 +157,7 @@ We again repeat this for $T$ training iterations, and initialize $\boldsymbol{\t
     \end{algorithmic}
 \end{algorithm}
 
+\newpage
 \subsection{Score Matching}
 \label{sec:gmm_sm}
 
@@ -169,58 +169,103 @@ to switch the objective function.
 We take the Exact Score Matching objective function \ref{eq:sm_objective} from Section \ref{sec:sm} and formulate the optimization problem:
 
 \begin{equation}
-    \min_{\substack{\boldsymbol{\theta}}} \mathcal{L}(\boldsymbol{\theta}) = \mathbb{E}_{p_d(\vec x)} \left[\text{tr} \left( \nabla_{\vec x}^2 \log p_{\boldsymbol{\theta}}(\vec x) \right) + \frac{1}{2} \left\| \nabla_{\vec x} \log p_{\boldsymbol{\theta}}(\vec x) \right\|^2 \right]
+    \min_{\substack{\boldsymbol{\theta}}} \mathcal{L}(\boldsymbol{\theta}) = \frac{1}{N} \sum_{i=1}^{N} \left(\text{tr} \left( \nabla_{\vec x_i} s_{\boldsymbol{\theta}}(\vec x_i) \right) + \frac{1}{2} \left\| s_{\boldsymbol{\theta}}(\vec x_i) \right\|^2 \right)
     \label{eq:sm_optimization_problem}
 \end{equation}
 
-In the same manner as \ref{sec:gmm_sgd} we optimize this objective using Gradient Descent. 
+The we optimze this objective using Gradient Descent for $T$ Training Iteration and Learning Rate $\eta$.  
 
 \begin{algorithm}
     \caption{Score Matching}
-    \label{alg:sm}
     \begin{algorithmic}[1]  
         \Require $\vec X = \{\vec x_1, \vec x_2, ..., \vec x_N\}$, $\boldsymbol{\theta}$, $\eta$, $T$
         \For{$t = 1$ to $T$}
-            \State $\mathcal{L}(\boldsymbol{\theta}) \gets \frac{1}{N} \sum_{i=1}^N \left( tr(\nabla_{\vec x_i}^2 \log p_{\boldsymbol{\theta}}(\vec x_i)) + \frac{1}{2} \left\| \nabla_{\vec x_i} \log p_{\boldsymbol{\theta}}(\vec x_i) \right\|^2 \right)$
+            \State $\mathcal{L}(\boldsymbol{\theta}) \gets \frac{1}{N} \sum_{i=1}^N \textsc{ScoreMatchingLoss}(\vec x_i)$
             \State $\boldsymbol{\theta} \gets \boldsymbol{\theta} + \eta \nabla_{\boldsymbol{\theta}} \mathcal{L}(\boldsymbol{\theta})$
         \EndFor
-    \end{algorithmic}
+        \State \Return $\boldsymbol{\theta}$
+        \end{algorithmic}
+        \noindent\rule{\linewidth}{0.4pt} % Horizontal line or delimiter
+        \textbf{Procedure:} \textsc{ScoreMatchingLoss}($\vec x$)
+        \begin{algorithmic}[1]
+            \State $s_{\boldsymbol{\theta}}(\vec x) \gets \nabla_{\vec x} \log p_{\boldsymbol{\theta}}(\vec x)$
+            \State $\mathcal{L}(\boldsymbol{\theta}) \gets tr(\nabla_{\vec x} s_{\boldsymbol{\theta}}(\vec x)) + \frac{1}{2} \left\| s_{\boldsymbol{\theta}}(\vec x) \right\|^2 $
+            \State \Return $\mathcal{L}(\boldsymbol{\theta})$
+        \end{algorithmic}
 \end{algorithm}
 
 \subsubsection{Sliced Score Matching}
 \label{sec:gmm_ssm}
 
 To use Sliced instead of Exact Score Matching we can do everything in the same way as above, we only need to replace 
-the objective function with the Sliced Score Matching objective from \ref{eq:ssm_vr}, Section \ref{sec:ssm}.
+the objective function with the Sliced Score Matching objective \ref{eq:ssm_vr} from Section \ref{sec:ssm}. \\
+Note that for simplicity we only use one random vector $v_i$ (one slice) for each datapoint. 
 
 \begin{equation}
-    \min_{\substack{\boldsymbol \theta}}  \mathcal{J}(\theta; p_\vec{v}) = \mathbb{E}_{p_v} \mathbb{E}_{p_d} \left[ \vec{v}^T \nabla_\vec{x} s_\theta(\vec{x}) \vec{v} + \frac{1}{2} \norm{ s_\theta(\vec{x}) }^2_2 \right]
+    \min_{\substack{\boldsymbol{\theta}}} \mathcal{L}(\boldsymbol{\theta}) = \frac{1}{N} \sum_{i=1}^{N} \left( \vec{v}_i^T \nabla_{\vec x_i} s_{\boldsymbol{\theta}}(\vec x_i) \vec{v}_i + \frac{1}{2} \norm{  s_{\boldsymbol{\theta}}(\vec x_i) }^2_2 \right)
     \label{eq:ssm_optimization_problem}
 \end{equation}
 
-\begin{algorithm}
+\begin{algorithm}[H]
     \caption{Sliced Score Matching}
-    \label{alg:ssm}
     \begin{algorithmic}[1]  
         \Require $\vec X = \{\vec x_1, \vec x_2, ..., \vec x_N\}$, $\boldsymbol{\theta}$, $\eta$, $T$
         \For{$t = 1$ to $T$}
-            \State $\mathcal{L}(\boldsymbol{\theta}) \gets \frac{1}{N} \sum_{i=1}^N \left( \vec{v}^T \nabla_\vec{x} s_\theta(\vec{x}) \vec{v} + \frac{1}{2} \norm{ s_\theta(\vec{x}) }^2_2 \right)$
+            \State $\mathcal{L}(\boldsymbol{\theta}) \gets \frac{1}{N} \sum_{i=1}^N \textsc{SlicedScoreMatchingLoss}(\vec x_i)$
             \State $\boldsymbol{\theta} \gets \boldsymbol{\theta} + \eta \nabla_{\boldsymbol{\theta}} \mathcal{L}(\boldsymbol{\theta})$
         \EndFor
-    \end{algorithmic}
+        \State \Return $\boldsymbol{\theta}$
+        \end{algorithmic}
+        \noindent\rule{\linewidth}{0.4pt} % Horizontal line or delimiter
+        \textbf{Procedure:} \textsc{SlicedScoreMatchingLoss}($\vec x$)
+        \begin{algorithmic}[1]
+            \State $\vec v \gets \mathcal{N}(0, 1)$
+            \State $s_{\boldsymbol{\theta}}(\vec x) \gets \nabla_{\vec x} \log p_{\boldsymbol{\theta}}(\vec x)$
+            \State $\mathcal{L}(\boldsymbol{\theta}) \gets \vec{v}^T \nabla_{\vec x_i} s_{\boldsymbol{\theta}}(\vec x_i) \vec{v} + \frac{1}{2} \norm{  s_{\boldsymbol{\theta}}(\vec x_i) }^2_2$
+            \State \Return $\mathcal{L}(\boldsymbol{\theta})$
+        \end{algorithmic}
 \end{algorithm}
 
-We implented both Algorithms again using pytorch \cite{pytorch} autograd. 
+We implented both Algorithms again using PyTorch \cite{pytorch} and troch.autograd. 
 
 \subsection{Sampling}
 \label{sec:gmm_sampling}
 
+Once the Gaussian Mixture Model (GMM) is trained, we can generate new samples from the learned distribution. Sampling from a GMM involves two steps:
+
+1. \textbf{Component Selection}: First, we sample a component index $k$ from a categorical distribution with the mixture weights $\boldsymbol{\pi}$ as probabilities.
+   
+2. \textbf{Gaussian Sampling}: After selecting a component $k$, we sample from the corresponding Gaussian with parameters $\boldsymbol{\mu}_k$ and $\boldsymbol{\Sigma}_k$. 
+
+\begin{algorithm}
+    \caption{GMM Sampling}
+    \label{alg:gmm_sampling}
+    \begin{algorithmic}[1]  
+        \Require $N$, $\boldsymbol{\theta} = \{\boldsymbol{\pi}, \boldsymbol{\mu}, \boldsymbol{\Sigma}\}$
+        \State \texttt{samples} $\gets 0$
+        \For{$i = 1$ to $N$}
+            \State $ k \gets \textsc{Categorical}(\boldsymbol{\pi})$
+            \State \texttt{samples} $\gets \texttt{samples} + \mathcal{N}(\boldsymbol{\mu_k}, \boldsymbol{\Sigma_k})$
+        \EndFor
+        \State \Return \texttt{samples}
+    \end{algorithmic}
+\end{algorithm}
+
+We implemented this in PyTorch \cite{pytorch}, using \\
+\texttt{torch.distributions.MultivariateNormal} for generating samples, and \texttt{torch.Categorical} for component selection.
+
 \section{Using more complex PCs}
 
 While the model proposed in Section \ref{sec:simple_pc} works well for relatively simple tasks like 2 dimensional density estimation
-it doesn't perform very well with complex higher dimensional data e.g. images. 
+it doesn't perform very well with complex higher dimensional data, e.g. images. 
 
 So to get a wider variety of results we decided to also use a state-of-the-art framework for Probabilistic Circuits called 
 EinsumNetworks \cite{einsum} for modelling more complex higher dimensional datasets. 
 
-For more details on how EinsumNetworks work please refer to the \cite{einsum} but in principle 
+For more details on how EinsumNetworks work please refer to \cite{einsum} but in general the same 
+principles as in our GMM apply but due to the deeper structure the model is much more complex and thus much larger. 
+
+However implementing the training of an EinsumNetwork with our targeted algorithms is basically the same 
+as in the GMM. Note that training with EM already comes with the framework, so we will leave this out. \\
+For all other algorithms, we can apply them in the exact same way as described in Section \ref{sec:simple_pc} above, only needing 
+to switch out the calculation of $\log p_{\boldsymbol{\theta}(\vec x)}$ to the log-density function the EinsumNetwork framework provides. 
