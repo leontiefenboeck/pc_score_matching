@@ -1,7 +1,6 @@
 import numpy as np
 import torch 
 from sklearn.cluster import KMeans
-import time
 
 from gmm import GMM
 import data
@@ -12,7 +11,7 @@ os.environ["LOKY_MAX_CPU_COUNT"] = "4"
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-dataset = 'halfmoons'
+dataset = 'spirals'
 algorithms = ['EM', 'GD', 'SM', 'SSM']
 
 use_best_parameters = False             # parameters after cross validation (used in thesis)
@@ -24,7 +23,7 @@ num_samples = 10000
 
 K = 10                      # number of components 
 lr = 0.01                   # learning rate
-epochs = 200                # number of training epochs
+epochs = 50                # number of training epochs
 
 n_slices = 1                # how many random vectors for sliced score matching
 
@@ -40,8 +39,8 @@ if dataset == 'board': Ks = [8, 60, 100]
 x = data.get_2d(dataset, num_samples * 2, seed)
 np.random.shuffle(x)
 
-torch.seed() 
-np.random.seed(None)
+# torch.seed() 
+# np.random.seed(None)
 
 if use_best_parameters: K = Ks[K_index]
 
@@ -64,10 +63,7 @@ for a in algorithms:
 
     if use_best_parameters: lr, epochs = utils.load_best_params(dataset, a, K)
 
-    start = time.time()
     train_lopgs = utils.train(model, x, a, lr, epochs, n_slices)
-    end = time.time()
-    print(end - start)
     logps.append((train_lopgs, a))
 
     test_logp = model.log_likelihood(x_test)
@@ -75,6 +71,6 @@ for a in algorithms:
     experiments.append((model, (K, lr, epochs), a, test_logp))
 
 # ------------------------------ visualization ---------------------------
-# utils.plot_data(x.detach().cpu(), dataset, centers)
-# utils.plot_density_and_samples(experiments, dataset, K)
-# utils.plot_logp(logps, dataset, K)
+utils.plot_data(x.detach().cpu(), dataset, centers)
+utils.plot_density_and_samples(experiments, dataset, K)
+utils.plot_logp(logps, dataset)

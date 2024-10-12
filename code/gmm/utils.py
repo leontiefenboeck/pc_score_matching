@@ -6,6 +6,7 @@ import pandas as pd
 import seaborn as sns
 import os 
 import json
+import time
 
 def sm_loss(model, x):
     x.requires_grad_()
@@ -41,10 +42,10 @@ def ssm_loss(model, x, n_slices):
 
 def train(model, x, algorithm, lr, epochs, n_slices):
 
-    logps = []
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)  
 
-    for i in range(epochs):
+    logps = []
+    for _ in range(epochs):
 
         logps.append(-model.log_likelihood(x))
 
@@ -186,7 +187,7 @@ def plot_density_and_samples(experiments, dataset, K):
     if not os.path.exists(f'results/{dataset}/'): os.makedirs(f'results/{dataset}/')
     plt.savefig(f"results/{dataset}/{dataset}_{K}.png", format='png', bbox_inches='tight')
     
-def plot_logp(logps, dataset, K):
+def plot_logp(logps, dataset):
 
     data = []
     for logp, algorithm in logps:
@@ -195,50 +196,22 @@ def plot_logp(logps, dataset, K):
     df = pd.DataFrame(data, columns=['Epoch', 'Algorithm', 'NLL'])
 
     sns.set_theme(style="whitegrid")
-    plt.figure(figsize=(15, 8))
+    plt.figure(figsize=(15, 9))
 
-    palette = sns.color_palette("deep", n_colors=len(logps))
+    palette = sns.color_palette("pastel", n_colors=len(logps))
 
-    sns.lineplot(data=df, x='Epoch', y='NLL', hue='Algorithm', style='Algorithm', markers=['s', 'H', 'o', '^'], markersize=6, markevery=2, dashes=False, linewidth=3, alpha=0.7, palette=palette)
-
-    plt.xlabel('Epochs', fontsize=20, fontweight='bold', labelpad=12)
-    plt.ylabel('NLL', fontsize=20, fontweight='bold', labelpad=12)
-    plt.xticks(fontsize=12)
-    plt.yticks(fontsize=12)
-    plt.legend(fontsize=12, loc='upper right')
-    plt.grid(True, linestyle='--', linewidth=0.6, alpha=0.7)
-    plt.tight_layout()
-
-    if not os.path.exists(f'results/{dataset}/'): os.makedirs(f'results/{dataset}/')
-    plt.savefig(f"results/{dataset}/logp.png", format='png', dpi=300, bbox_inches='tight')
-
-def plot_logp_std(logps, dataset):
-    data = []
+    sns.lineplot(data=df, x='Epoch', y='NLL', hue='Algorithm', style='Algorithm', 
+                 markers=['s', 'd', 'o', '^'], markersize=8, markevery=4, 
+                 dashes=False, linewidth=5, alpha=1, palette=palette)
     
-    for logp, algorithm in logps:
-        data.extend([(epoch, algorithm, np.mean(value), np.std(value)) for epoch, value in enumerate(logp)])
+    plt.legend(fontsize=20, loc='upper right', title='Algorithms', title_fontsize=25, frameon=False)
 
-    df = pd.DataFrame(data, columns=['Epoch', 'Algorithm', 'Mean NLL', 'Std NLL'])
-
-    sns.set_theme(style="whitegrid")
-    plt.figure(figsize=(15, 8))
-
-    palette = sns.color_palette("deep", n_colors=len(logps))
-
-    sns.lineplot(data=df, x='Epoch', y='Mean NLL', hue='Algorithm', style='Algorithm', 
-                 markers=['s', 'D', 'o', '^'], markersize=5, markevery=4, 
-                 dashes=False, linewidth=3, alpha=0.7, palette=palette)
-
-    for algorithm in df['Algorithm'].unique():
-        subset = df[df['Algorithm'] == algorithm]
-        plt.fill_between(subset['Epoch'], subset['Mean NLL'] - subset['Std NLL'], subset['Mean NLL'] + subset['Std NLL'], alpha=0.5)
-
-    plt.xlabel('Epochs', fontsize=20, fontweight='bold', labelpad=12)
-    plt.ylabel('Mean NLL', fontsize=20, fontweight='bold', labelpad=12)
+    plt.xlabel('Epochs', fontsize=25, labelpad=20)
+    plt.ylabel('Negative Log-Likelihood', fontsize=25, labelpad=20)
     plt.xticks(fontsize=12)
     plt.yticks(fontsize=12)
-    plt.legend(fontsize=12, loc='upper right')
-    plt.grid(True, linestyle='--', linewidth=0.6, alpha=0.7)
+
+    plt.grid(True, linestyle='--', linewidth=2, alpha=0.5)
     plt.tight_layout()
 
     if not os.path.exists(f'results/{dataset}/'): os.makedirs(f'results/{dataset}/')

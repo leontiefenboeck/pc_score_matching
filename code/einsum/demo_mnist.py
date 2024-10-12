@@ -7,20 +7,23 @@ import utils
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-algorithms = ['SSM', 'SGD']
-algorithms = ['EM']
+algorithms = ['SSM', 'SGD', 'EM']
+# algorithms = ['EM']
+
+dataset = 'fashion-mnist'       # choose either mnist or fashion-mnist
 
 # ------------------------ constants -------------------------------
 exponential_family = EinsumNetwork.BinomialArray
 exponential_family_args = {'N': 255}
 
-classes = [7, 8]
+classes = [2]
 
 n_slices = 1
 
 K = 10
-learning_rate = 0.4
-num_epochs = 10
+learning_rate = 0.2
+lr_decay_step = 5
+num_epochs = 20
 
 # 'poon-domingos'
 pd_num_pieces = [4]
@@ -53,7 +56,11 @@ def ssm_loss(einet, x, n_slices=1):
     return (loss1 + loss2).mean()
 
 def get_data(): 
-    train_x, train_labels, test_x, test_labels = datasets.load_mnist()
+    
+    if dataset == 'mnist':
+        train_x, train_labels, test_x, test_labels = datasets.load_mnist() 
+    if dataset == 'fashion-mnist':
+        train_x, train_labels, test_x, test_labels = datasets.load_fashion_mnist()
 
     if not exponential_family != EinsumNetwork.NormalArray:
         train_x /= 255.
@@ -111,7 +118,7 @@ for a in algorithms:
     test_N = test_x.shape[0]
 
     optimizer = torch.optim.Adam(einet.parameters(), lr=learning_rate)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 2, 0.5)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, lr_decay_step, 0.5)
 
     for epoch_count in range(num_epochs):
 
@@ -139,16 +146,15 @@ for a in algorithms:
                 log_likelihood.backward()
                 einet.em_process_batch()
             else: 
-                optimizer.zero_grad()
-
+                
                 if a == 'SSM':
                     loss = ssm_loss(einet, batch_x, n_slices)
                 if a == 'SGD':
                     loss = -torch.mean(EinsumNetwork.log_likelihoods(einet.forward(batch_x)))
 
-
+                optimizer.zero_grad()
                 loss.backward()
-                torch.nn.utils.clip_grad_norm_(einet.parameters(), max_norm=1.0)
+                torch.nn.utils.clip_grad_norm_(einet.parameters(), 1.0)
                 optimizer.step()
 
         scheduler.step()
@@ -158,15 +164,12 @@ for a in algorithms:
     # draw some samples 
     #####################
 
-    model_dir = 'models/einet/demo_mnist/'
     samples_dir = 'results/'
-
-    utils.mkdir_p(model_dir)
     utils.mkdir_p(samples_dir)
 
     samples = einet.sample(num_samples=25).cpu().numpy()
     samples = samples.reshape((-1, 28, 28))
-    utils.save_image_stack(samples, 5, 5, os.path.join(samples_dir, f"mnist_{a}.png"), margin_gray_val=0.)
+    utils.save_image_stack(samples, 5, 5, os.path.join(samples_dir, f"{classes[0]}{dataset}_{a}.png"), margin_gray_val=0.)
 
     print(f'{a}-logp = {EinsumNetwork.eval_loglikelihood_batched(einet, test_x, batch_size=batch_size) / test_N}')
 
@@ -174,4 +177,4 @@ for a in algorithms:
 # ground truth
 ground_truth = test_x[0:25, :].cpu().numpy()
 ground_truth = ground_truth.reshape((-1, 28, 28))
-utils.save_image_stack(ground_truth, 5, 5, os.path.join(samples_dir, "mnist_ground_truth.png"), margin_gray_val=0.)
+utils.save_image_stack(ground_truth, 5, 5, os.path.join(samples_dir, f'{classes[0]}{dataset}_ground_truth.png'), margin_gray_val=0.)

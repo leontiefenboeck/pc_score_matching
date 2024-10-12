@@ -1,67 +1,32 @@
-mnist
+mnist7
 
-K = 10
-learning_rate = 0.1
-num_epochs = 10
+EM-logp = -11569.974616974709
+SGD-logp = -12924.963703793774
+SM-logp = -16446.66588642996
 
-SSM-logp = -20632.13539640078
-SGD-logp = -21646.078398589496
-EM-logp = -11692.862566877431
+mnist8
 
-K = 10
-learning_rate = 0.1
-num_epochs = 20
+EM-logp = -15983.724974332648
+SGD-logp = -17996.010523613964
+SSM-logp = -22212.506416837783
 
-SSM-logp = -19270.417771157587
-SGD-logp = -15655.878647859921
-EM-logp = -11634.888633876459
+mnist4
 
-K = 10
-learning_rate = 0.01
-num_epochs = 20
+EM-logp = -13130.880600814664
+SGD-logp = -15170.364052953157
+SSM-logp = -20512.99299898167
 
-SSM-logp = -64613.870500972764
-SGD-logp = -64486.829158560315
-EM-logp = -11644.741336332685
+fmnist9
+EM-logp = -11173.0655
+SGD-logp = -11631.520875
+SSM-logp = -15864.497125
 
-K = 10
-learning_rate = 0.01
-num_epochs = 100
+fmnist1
+EM-logp = -8229.776
+SGD-logp = -8141.5271875
+SSM-logp = -10797.3639375
 
-SSM-logp = -22397.687925583657
-
-
-K = 5
-learning_rate = 0.1
-num_epochs = 10
-SSM-logp = -22875.060888861866
-SGD-logp = -23675.765017023346
-EM-logp = -14560.84159168288
-
-
-K = 20
-learning_rate = 0.1
-num_epochs = 10
-SSM-logp = -20117.017752918287
-SGD-logp = -20618.39597519455
-EM-logp = -10012.59042132782
-
-
-K = 50
-learning_rate = 0.1
-num_epochs = 10
-
-SSM-logp = -19665.96637889105
-SGD-logp = -20180.21966196498
-EM-logp = -9695.092351653697
-
-
-
-K = 10
-
-num_epochs = 10
-EM-logp = -11643.09986016537
-
-learning_rate = 0.1
-num_epochs = 60
-SGD-logp = -12521.13609557393
+fmnist2
+EM-logp = -11972.54525
+SGD-logp = -12908.728125
+SSM-logp = -17593.91325
