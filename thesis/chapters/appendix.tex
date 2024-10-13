@@ -1,13 +1,13 @@
 \chapter{Density Functions}
 
-\section{Multivariate Gaussian}
+\subsubsection{Multivariate Gaussian}
 
 \begin{equation}
     p(\mathbf{x}) = \frac{1}{\sqrt{(2\pi)^n |\boldsymbol{\Sigma}|}} \exp\left(-\frac{1}{2} (\mathbf{x} - \boldsymbol{\mu})^T \boldsymbol{\Sigma}^{-1} (\mathbf{x} - \boldsymbol{\mu})\right)
     \label{eq:mvn}
 \end{equation}
 
-\section{Log Multivariate Gaussian}
+\subsubsection{Log Multivariate Gaussian}
 
 \begin{equation}
     \log p(\mathbf{x}) = -\frac{n}{2} \log(2\pi) - \frac{1}{2} \log |\boldsymbol{\Sigma}| - \frac{1}{2} (\mathbf{x} - \boldsymbol{\mu})^T \boldsymbol{\Sigma}^{-1} (\mathbf{x} - \boldsymbol{\mu})
@@ -17,77 +17,65 @@
 
 \chapter{Additional Experiment Results}
 
-% \begin{figure}[H]
-%     \centering
-%     \begin{subfigure}[b]{0.7\textwidth} 
-%         \centering
-%         \includegraphics[width=\textwidth]{figures/halfmoons/10_kmeans_data.png}
-%         \caption{Initialization}
-%     \end{subfigure}
-%     \vskip 10pt
-%     \begin{subfigure}[b]{0.8\textwidth} 
-%         \centering
-%         \includegraphics[width=\textwidth]{figures/halfmoons/10_kmeans.png} 
-%         \caption{Densities and Samples}
-%     \end{subfigure} 
-%     \caption{KMeans}
-%     \label{fig:kmeans_vs_rand}
-% \end{figure}
+\subsubsection{Spirals Repeat}
+\label{sec:app_spirals}
 
-% \begin{figure}[H]
-%     \centering
-%     \begin{subfigure}[b]{0.4\textwidth} 
-%         \centering
-%         \includegraphics[width=\textwidth]{figures/halfmoons/10_random1_data.png}
-%         \caption{Initialization}
-%     \end{subfigure}
-%     \hfill
-%     \begin{subfigure}[b]{0.59\textwidth} 
-%         \centering
-%         \includegraphics[width=\textwidth]{figures/halfmoons/10_random1.png} 
-%         \caption{Densities and Samples}
-%     \end{subfigure} 
-%     \caption{Random Example 1}
-%     \label{fig:kmeans_vs_rand}
-% \end{figure}
+\begin{figure}[H]
+    \centering
+    \makebox[\textwidth][c]{\includegraphics[width=0.6\textwidth]{figures/spirals/30_kmeans.png}}
+    \makebox[\textwidth][c]{\hspace{-0.4cm} \includegraphics[width=0.8\textwidth]{figures/spirals/30_kmeans_logp.png}}
+    \caption{Densities, Samples and NLL over Training Iterations}
+\end{figure}
 
-% \begin{figure}[H]
-%     \centering
-%     \begin{subfigure}[b]{0.4\textwidth} 
-%         \centering
-%         \includegraphics[width=\textwidth]{figures/halfmoons/10_random2_data.png}
-%         \caption{Initialization}
-%     \end{subfigure}
-%     \hfill
-%     \begin{subfigure}[b]{0.59\textwidth} 
-%         \centering
-%         \includegraphics[width=\textwidth]{figures/halfmoons/10_random2.png} 
-%         \caption{Densities and Samples}
-%     \end{subfigure} 
-%     \caption{Random Example 2}
-%     \label{fig:kmeans_vs_rand}
-% \end{figure}
+\begin{figure}[H]
+    \centering
+    \makebox[\textwidth][c]{\hspace{-0.4cm} \includegraphics[width=0.8\textwidth]{figures/spirals/wall_time.png}}
+    \caption{NLL over Time}
+\end{figure}
 
-% \begin{figure}[H]
-%     \centering
-%     \begin{subfigure}[b]{0.4\textwidth} 
-%         \centering
-%         \includegraphics[width=\textwidth]{figures/halfmoons/10_random3_data.png}
-%         \caption{Initialization}
-%     \end{subfigure}
-%     \hfill
-%     \begin{subfigure}[b]{0.59\textwidth} 
-%         \centering
-%         \includegraphics[width=\textwidth]{figures/halfmoons/10_random3.png} 
-%         \caption{Densities and Samples}
-%     \end{subfigure} 
-%     \caption{Random Example 3}
-%     \label{fig:kmeans_vs_rand}
-% \end{figure}
-    
-% \begin{figure}[H]
-%     \centering
-%     \makebox[\textwidth][c]{\includegraphics[width=0.9\textwidth]{figures/spirals/30_random_logp.png}}
-%     \caption{Negative Log Likelihood over Epochs with random parameter initialization}
-%     \label{fig:halfmoons_10_random_logp}
-% \end{figure}
+\newpage
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.49\textwidth} 
+        \centering
+        \includegraphics[width=\textwidth]{figures/spirals/30_kmeans_data.png}
+        \caption{KMeans}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.49\textwidth} 
+        \centering
+        \includegraphics[width=\textwidth]{figures/spirals/30_random1_data.png} 
+        \caption{Random}
+    \end{subfigure} 
+    \caption{KMeans vs. Random Initialization of means}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \makebox[\textwidth][c]{\includegraphics[width=0.9\textwidth]{figures/spirals/30_random_logp.png}}
+    \caption{Negative Log Likelihood over Epochs with random parameter initialization}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \makebox[\textwidth][c]{\hspace*{-1cm} \includegraphics[width=0.8\textwidth]{figures/spirals/30_random1.png}}
+    \vskip 5pt
+    \makebox[\textwidth][c]{\hspace*{-1cm} \includegraphics[width=0.8\textwidth]{figures/spirals/30_random2.png}}
+    \vskip 5pt
+    \makebox[\textwidth][c]{\hspace*{-1cm} \includegraphics[width=0.8\textwidth]{figures/spirals/30_random3.png}}
+    \caption{Densities and Samples for the spirals dataset}
+\end{figure}
+
+\subsubsection{Halfmoons Random Initialization Results}
+\label{sec:app_halfmoons_rand}
+
+\begin{figure}[H]
+    \centering
+    \makebox[\textwidth][c]{\hspace*{-1cm} \includegraphics[width=0.8\textwidth]{figures/halfmoons/10_random1.png}}
+    \vskip 5pt
+    \makebox[\textwidth][c]{\hspace*{-1cm} \includegraphics[width=0.8\textwidth]{figures/halfmoons/10_random2.png}}
+    \vskip 5pt
+    \makebox[\textwidth][c]{\hspace*{-1cm} \includegraphics[width=0.8\textwidth]{figures/halfmoons/10_random3.png}}
+    \caption{Densities and Samples for the halfmoon dataset}
+\end{figure}
+
+
