@@ -21,7 +21,7 @@ random_init = False                      # initialize means and weights randomly
 # ----------------------------- parameters -------------------------------
 num_samples = 10000
 
-K = 10                      # number of components 
+K = 100                      # number of components 
 lr = 0.01                   # learning rate
 epochs = 50                # number of training epochs
 
@@ -60,6 +60,8 @@ x = torch.tensor(x[num_samples:], dtype=torch.float32).to(device)
 for a in algorithms:
 
     model = GMM(device, K, centers, random_init).to(device)
+    num_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print(num_params)
 
     if use_best_parameters: lr, epochs = utils.load_best_params(dataset, a, K)
 

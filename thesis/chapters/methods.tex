@@ -6,7 +6,7 @@
 
 In this thesis we try to address the concerns discussed in the introduction by training 
 Probabilistic Circuits (PCs) through novel ways, specifically Score Matching (SM) and Sliced Score Matching (SSM).
-Then we compare results from these methods with results from convential methods to train PCs, specifically Maximum Likelihood Estimation (MLE) using both Gradient Descent (GD) and Expectation Maximization (EM). \\
+Then we compare results from these methods with results from conventional methods to train PCs, specifically Maximum Likelihood Estimation (MLE) using both Gradient Descent (GD) and Expectation Maximization (EM). \\
 
 \section{Creating a simple PC}
 \label{sec:simple_pc}
@@ -35,13 +35,13 @@ to calculate the log-density of a Gaussian.
 \end{align}
 
 To compute this exactly as in \ref{eq:gmm_log2}, we encounter a challenge where the calculation of exponentials, can lead to instability due to overflow or underflow \cite{logsumexp}. \\
-To address this, we use the \textbf{log-sum-exp (LSE)} trick:
+To address this, we use the \textbf{log-sum-exp (LSE)} \cite{logsumexp} trick:
 
 \[
     \log \sum_{i=k}^K \exp(x_k) = C + \log \sum_{i=k}^K \exp(x_k - C)
 \]
 
-Introducing this constant $C$, where usually $C = \max_k (x_k)$, mitigates the underflow and overflow potential \cite{logsumexp}.
+Introducing this constant $C$, where usually $C = \max_k (x_k)$, mitigates the underflow and overflow potential \cite{logsumexp}. \\
 
 Let $x_k = \log(\pi_k) + \log \left(\mathcal{N}(\vec x | \boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k)\right)$ and 
 let $C = \max_k \left( \log(\pi_k) + \log \left( \mathcal{N}(\vec x | \boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k) \right) \right) $ we can rewrite 
@@ -65,8 +65,8 @@ $\log p_{\boldsymbol{\theta}}(\vec x)$.
 \subsection{Maximum Likelihood Estimation}
 \label{sec:gmm_mle}
 
-Now to train this GMM on some data $\vec X = \{\vec x_1,\vec  x_2 .. , \vec x_n\}$ in the convential way, we can calculate $\boldsymbol{\theta}$ using the 
-log Maximum Likelihood Estimation (MLE) objective from Equation \ref{eq:log_mle} in the Background chapter and include the density function
+Now to train this GMM on some data $\vec X = \{\vec x_1,\vec  x_2 .. , \vec x_n\}$ in the conventional way, we can calculate $\boldsymbol{\theta}$ using the 
+log Maximum Likelihood Estimation (MLE) objective from Equation \ref{eq:log_mle} in the Background chapter with the density function
 of the GMM from Equation \ref{eq:gmm_log_final}:
 \begin{align}
     \max_{\substack{\boldsymbol{\theta}}} \mathcal{L}(\boldsymbol{\theta}) = \sum_{i=1}^{N} \log p_{\boldsymbol{\theta}}(\vec x_i)
@@ -100,7 +100,7 @@ The main steps in applying GD to our GMM objective are:
 \]
 
 We repeat this for $T$ training iterations, also often called Epochs. \\
-Note that for the first iteration the prameters $\boldsymbol{\theta}$ have to be initialized in some manner, e.g. randomly. 
+Note that for the first iteration the parameters $\boldsymbol{\theta}$ have to be initialized in some manner, e.g. randomly. 
 
 \begin{algorithm}
     \caption{Gradient Descent}
@@ -115,8 +115,9 @@ Note that for the first iteration the prameters $\boldsymbol{\theta}$ have to be
     \end{algorithmic}
 \end{algorithm}
 
-We implemeted this using pytorch's \cite{pytorch} autograd capabilities to compute the gradients.
+We implemented this using pytorch's \cite{pytorch} autograd capabilities to compute the gradients.
 
+\newpage
 \subsubsection{Expectation Maximization}
 \label{sec:gmm_em}
 
@@ -173,7 +174,7 @@ We take the Exact Score Matching objective function \ref{eq:sm_objective} from S
     \label{eq:sm_optimization_problem}
 \end{equation}
 
-The we optimze this objective using Gradient Descent for $T$ Training Iteration and Learning Rate $\eta$.  
+Then we optimize this objective using Gradient Descent for $T$ Training Iteration and Learning Rate $\eta$.  
 
 \begin{algorithm}
     \caption{Score Matching}
@@ -199,7 +200,7 @@ The we optimze this objective using Gradient Descent for $T$ Training Iteration 
 
 To use Sliced instead of Exact Score Matching we can do everything in the same way as above, we only need to replace 
 the objective function with the Sliced Score Matching objective \ref{eq:ssm_vr} from Section \ref{sec:ssm}. \\
-Note that for simplicity we only use one random vector $v_i$ (one slice) for each datapoint. 
+Note that for simplicity we only use one random vector $v_i$ (one slice) for each data point. 
 
 \begin{equation}
     \min_{\substack{\boldsymbol{\theta}}} \mathcal{L}(\boldsymbol{\theta}) = \frac{1}{N} \sum_{i=1}^{N} \left( \vec{v}_i^T \nabla_{\vec x_i} s_{\boldsymbol{\theta}}(\vec x_i) \vec{v}_i + \frac{1}{2} \norm{  s_{\boldsymbol{\theta}}(\vec x_i) }^2_2 \right)
@@ -226,7 +227,7 @@ Note that for simplicity we only use one random vector $v_i$ (one slice) for eac
         \end{algorithmic}
 \end{algorithm}
 
-We implented both Algorithms again using PyTorch \cite{pytorch} and troch.autograd. 
+We implemented both Algorithms again using PyTorch \cite{pytorch} and torch.autograd. 
 
 \subsection{Sampling}
 \label{sec:gmm_sampling}
@@ -263,7 +264,8 @@ So to get a wider variety of results we decided to also use a state-of-the-art f
 EinsumNetworks \cite{einsum} for modelling more complex higher dimensional datasets. 
 
 For more details on how EinsumNetworks work please refer to \cite{einsum} but in general the same 
-principles as in our GMM apply but due to the deeper structure the model is much more complex and thus much larger. 
+principles as in our GMM apply but due to the deeper structure, the model is much more complex and can approximate more complex distribution. 
+It is also much larger and training takes longer. 
 
 However implementing the training of an EinsumNetwork with our targeted algorithms is basically the same 
 as in the GMM. Note that training with EM already comes with the framework, so we will leave this out. \\
