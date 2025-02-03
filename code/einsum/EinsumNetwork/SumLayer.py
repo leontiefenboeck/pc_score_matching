@@ -438,7 +438,7 @@ class EinsumLayer(SumLayer):
                 idx = torch.argmax(posterior, -1)
 
             dist_idx_right = idx % self.num_input_dist
-            dist_idx_left = idx // self.num_input_dist
+            dist_idx_left = torch.div(idx, self.num_input_dist, rounding_mode='trunc')
             node_idx_left = [self.inputs[i][0].einet_address.idx for i in node_idx]
             node_idx_right = [self.inputs[i][1].einet_address.idx for i in node_idx]
             layers_left = [self.inputs[i][0].einet_address.layer for i in node_idx]
