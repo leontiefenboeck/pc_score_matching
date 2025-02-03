@@ -16,12 +16,12 @@ dataset = 'mnist'       # choose either mnist or fashion-mnist
 exponential_family = EinsumNetwork.BinomialArray
 exponential_family_args = {'N': 255}
 
-classes = [8]
+classes = [6]
 
 n_slices = 1 # number of slices for SSM
 
 num_epochs = 50
-lr = 0.01
+lr = 0.1
 lr_decay = 0.5
 lr_decay_step = 10
 
