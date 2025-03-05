@@ -2,3 +2,29 @@
 \label{cha:discussion}
 
 \section{Interpretation of Experimental Results}
+
+Looking at the best possible results \ref{sec:best_results} from the 2D Density Estimation Experiments, we can see that
+Maximum Likelihood Estimation with Gradient Descent provides the highest Log-Likelihood values for all scenarios. 
+This could be somewhat expected, since here we are directly maximizing the Likelihood, whereas with Score Matching the Likelihood
+is only indirectly optimized by minimizing the Score Matching Objective which comes from Fisher Divergence. 
+However, also when looking at the density and sample plots, Gradient Descent objectively produces the nicest results, meaning the least 
+noisy and the most accurately distributed, so for example no made up high density regions where there shouldn't be one. 
+This wasn't necessarily expected.  
+Also not expected was that where EM provided similar results to Gradient Descent for small $K$, EM struggled with large $K$, where it found
+really small very high density Gaussians that messed up the sample plots. 
+
+Still considering these plots it was interesting how well Sliced Score Matching with only $1$ slice worked as an approximation for Exact Score Matching,
+which we empirically confirmed later. 
+
+When looking at the Performance Analysis \ref{sec:2d_exp2} the main takeaways are that EM optimizes the fastest epoch-wise and overall time-wise, 
+though GD is only slightly slower. As expected the many additional calculations for the Score Matching Algorithms provide a huge 
+performance penalty. 
+
+For random initialization \ref{sec:2d_exp3} it was somewhat surprising how similar all algorithms performed when compared 
+to their deterministic KMeans counterpart. The Log-Likelihood
+values were usually only slightly worse and the same goes for the density and sample plots. However we noticed that for the more 
+complex spirals dataset the difference was already larger than for the simple halfmoon dataset. So we expect that the more complex 
+the dataset is, the worse random initialization performs.  
+
+Overall we can conclude that for 2D Density Estimation, Gradient Descent provided the best results, had the best robustness to 
+different hyperparameter settings and was nearly tied as the fastest algorithm to optimize. 

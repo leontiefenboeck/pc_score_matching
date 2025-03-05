@@ -11,7 +11,7 @@ Then we compare results from these methods with results from conventional method
 \section{Creating a simple PC}
 \label{sec:simple_pc}
 
-Recall from section \ref{sec:pc} that the simplest variant of a PC computes the weighted sum of two input distributions. This is 
+Recall from Section \ref{sec:pc} that the simplest variant of a PC computes the weighted sum of two input distributions. This is 
 called a Mixture Model and the graph can be seen in Figure \ref{fig:spn_gmm}. If we expand this to a mixture 
 of $K$ components and use Gaussian distributions in the leaf nodes then we arrive at the Gaussian Mixture Model 
 discussed in Section \ref{sec:gmm} with the modelled density function from Equation \ref{eq:gmm}.
@@ -34,42 +34,43 @@ to calculate the log-density of a Gaussian.
     \label{eq:gmm_log2}
 \end{align}
 
-To compute this exactly as in \ref{eq:gmm_log2}, we encounter a challenge where the calculation of exponentials, can lead to instability due to overflow or underflow \cite{logsumexp}. \\
+To compute this exactly as in Equation \ref{eq:gmm_log2}, we encounter a challenge where the calculation of exponentials, can lead to instability due to overflow or underflow \cite{logsumexp}. \\
 To address this, we use the \textbf{log-sum-exp (LSE)} \cite{logsumexp} trick:
 
 \[
     \log \sum_{i=k}^K \exp(x_k) = C + \log \sum_{i=k}^K \exp(x_k - C)
 \]
 
-Introducing this constant $C$, where usually $C = \max_k (x_k)$, mitigates the underflow and overflow potential \cite{logsumexp}. \\
+Introducing this constant $C$, where usually $C = \max_k (x_k)$, mitigates underflow \cite{logsumexp}. Overflow is still possible 
+but typically that is less of an issue. \\
 
 Let $x_k = \log(\pi_k) + \log \left(\mathcal{N}(\vec x | \boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k)\right)$ and 
 let $C = \max_k \left( \log(\pi_k) + \log \left( \mathcal{N}(\vec x | \boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k) \right) \right) $ we can rewrite 
-\ref{eq:gmm_log2} to arrive at a final numerically stable expression: 
+Equation \ref{eq:gmm_log2} to arrive at a final numerically stable expression: 
 
 \begin{equation}
     \log p_{\boldsymbol{\theta}}(\vec x) = C + \log \sum_{k=1}^K \exp\left( \log(\pi_k) + \log \left( \mathcal{N}(\vec x | \boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k) \right) - C \right)
     \label{eq:gmm_log_final}
 \end{equation}
 
-We implemented this expression in python and used pytorch's \cite{pytorch} torch.nn.Parameter 
-for all learnable parameters in $\boldsymbol{\theta}$ to use pytorch's optimization framework later.
+We implemented this expression in python and used PyTorch's \cite{pytorch} \texttt{torch.nn.Parameter}
+for all learnable parameters in $\boldsymbol{\theta}$ to use PyTorch's optimization framework later.
 
-We also used torch.distributions.MultivariateNormal to compute the log density of a single 
-gaussian component $\mathcal{N}(\vec x_s|\boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k)$ and torch.logsumexp
+We also used \texttt{torch.distributions.MultivariateNormal} to compute the log density of a single 
+gaussian component $\mathcal{N}(\vec x_s|\boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k)$ and \texttt{torch.logsumexp}
 for the LSE operation.  
 
-Note that for readability we will further refer to the whole density function of the GMM from \ref{eq:gmm_log_final} as just 
+Note that for readability we will further refer to the whole density function of the GMM from Equation \ref{eq:gmm_log_final} as just 
 $\log p_{\boldsymbol{\theta}}(\vec x)$.
 
 \subsection{Maximum Likelihood Estimation}
 \label{sec:gmm_mle}
 
-Now to train this GMM on some data $\vec X = \{\vec x_1,\vec  x_2 .. , \vec x_n\}$ in the conventional way, we can calculate $\boldsymbol{\theta}$ using the 
+Now to train this GMM on some data $\mathcal{X} = \{\vec x_1, ..., \vec x_N\}$ in the conventional way, we can calculate $\boldsymbol{\theta}$ using the 
 log Maximum Likelihood Estimation (MLE) objective from Equation \ref{eq:log_mle} in the Background chapter with the density function
 of the GMM from Equation \ref{eq:gmm_log_final}:
 \begin{align}
-    \max_{\substack{\boldsymbol{\theta}}} \mathcal{L}(\boldsymbol{\theta}) = \sum_{i=1}^{N} \log p_{\boldsymbol{\theta}}(\vec x_i)
+    \max_{\substack{\boldsymbol{\theta}}} L(\boldsymbol{\theta}) = \sum_{i=1}^{N} \log p_{\boldsymbol{\theta}}(\vec x_i)
     \label{eq:gmm_objective}
 \end{align}
 
@@ -84,19 +85,19 @@ that provide a concrete way on how the best possible $\boldsymbol{\theta}$ can b
 Gradient Descent (GD) is an iterative optimization algorithm used to minimize a given objective function, by  
 computing the gradients of the function with respect to its parameters and updating them iteratively \cite{deepl}.
 
-Recall that however when training a GMM, the goal is to maximize the log-likelihood function defined in Equation \ref{eq:gmm_objective}. 
+Recall that however when training a GMM, the goal is to \textbf{maximize} the log-likelihood function defined in Equation \ref{eq:gmm_objective}. 
 So to do this using GD, we instead \textbf{minimize} the \textbf{negative} log-likelihood (NLL), which is equivalent.
 
 The main steps in applying GD to our GMM objective are: 
 
-1. \textbf{Computing the gradients} of the negative Log-Likelihood function $\mathcal{L}(\boldsymbol{\theta})$ for each parameter in $\boldsymbol{\theta}$: 
+1. \textbf{Computing the gradients} of the negative Log-Likelihood function $\text{NLL}(\boldsymbol{\theta})$ for each parameter in $\boldsymbol{\theta}$: 
 \[
-    \nabla_{\boldsymbol{\theta}} \mathcal{L}(\boldsymbol{\theta}) = \nabla_{\boldsymbol{\theta}} (- \sum_{i=1}^{N} \log p_{\boldsymbol{\theta}}(\vec x))
+    \nabla_{\boldsymbol{\theta}} \text{NLL}(\boldsymbol{\theta}) = \nabla_{\boldsymbol{\theta}} (- \sum_{i=1}^{N} \log p_{\boldsymbol{\theta}}(\vec x))
 \]
 
 2. \textbf{Updating the parameters} using the computed gradients multiplied by a learning rate $\eta$:
 \[
-\theta^{(t+1)} = \theta^{(t)} + \eta \nabla_{\boldsymbol{\theta}} \mathcal{L}(\boldsymbol{\theta})
+    \boldsymbol{\theta}^{(t+1)} = \boldsymbol{\theta}^{(t)} - \eta \nabla_{\boldsymbol{\theta}} \text{NLL}(\boldsymbol{\theta})
 \]
 
 We repeat this for $T$ training iterations, also often called Epochs. \\
@@ -108,14 +109,14 @@ Note that for the first iteration the parameters $\boldsymbol{\theta}$ have to b
     \begin{algorithmic}[1]  
         \Require $\vec X = \{\vec x_1, \vec x_2, ..., \vec x_N\}$, $\boldsymbol{\theta}$, $\eta$, $T$
         \For{$t = 1$ to $T$}
-            \State $\mathcal{L}(\boldsymbol{\theta}) \gets - \sum_{i=1}^{N} \log p_{\boldsymbol{\theta}}(\vec x_i)$
-            \State $\boldsymbol{\theta} \gets \boldsymbol{\theta} + \eta \nabla_{\boldsymbol{\theta}} \mathcal{L}(\boldsymbol{\theta})$
+            \State $\text{NLL}(\boldsymbol{\theta}) \gets - \sum_{i=1}^{N} \log p_{\boldsymbol{\theta}}(\vec x_i)$
+            \State $\boldsymbol{\theta} \gets \boldsymbol{\theta} - \eta \nabla_{\boldsymbol{\theta}} \text{NLL}(\boldsymbol{\theta})$
         \EndFor
         \State \Return $\boldsymbol{\theta}$
     \end{algorithmic}
 \end{algorithm}
 
-We implemented this using pytorch's \cite{pytorch} autograd capabilities to compute the gradients.
+We implemented this using PyTorch's \cite{pytorch} \texttt{autograd} capabilities to compute the gradients.
 
 \newpage
 \subsubsection{Expectation Maximization}
@@ -167,10 +168,10 @@ to switch the objective function.
 
 \subsubsection{Exact Score Matching}
 
-We take the Exact Score Matching objective function \ref{eq:sm_objective} from Section \ref{sec:sm} and formulate the optimization problem:
+We take the Exact Score Matching objective function from Equation \ref{eq:sm_objective}, Section \ref{sec:sm} and formulate the optimization problem:
 
 \begin{equation}
-    \min_{\substack{\boldsymbol{\theta}}} \mathcal{L}(\boldsymbol{\theta}) = \frac{1}{N} \sum_{i=1}^{N} \left(\text{tr} \left( \nabla_{\vec x_i} s_{\boldsymbol{\theta}}(\vec x_i) \right) + \frac{1}{2} \left\| s_{\boldsymbol{\theta}}(\vec x_i) \right\|^2 \right)
+    \min_{\substack{\boldsymbol{\theta}}} \hat{\mathcal{L}}(\boldsymbol{\theta}) = \frac{1}{N} \sum_{i=1}^{N} \left(\text{tr} \left( \nabla_{\vec x_i} s_{\boldsymbol{\theta}}(\vec x_i) \right) + \frac{1}{2} \left\| s_{\boldsymbol{\theta}}(\vec x_i) \right\|^2 \right)
     \label{eq:sm_optimization_problem}
 \end{equation}
 
@@ -182,11 +183,11 @@ Then we optimize this objective using Gradient Descent for $T$ Training Iteratio
         \Require $\vec X = \{\vec x_1, \vec x_2, ..., \vec x_N\}$, $\boldsymbol{\theta}$, $\eta$, $T$
         \For{$t = 1$ to $T$}
             \State $\mathcal{L}(\boldsymbol{\theta}) \gets \frac{1}{N} \sum_{i=1}^N \textsc{ScoreMatchingLoss}(\vec x_i)$
-            \State $\boldsymbol{\theta} \gets \boldsymbol{\theta} + \eta \nabla_{\boldsymbol{\theta}} \mathcal{L}(\boldsymbol{\theta})$
+            \State $\boldsymbol{\theta} \gets \boldsymbol{\theta} - \eta \nabla_{\boldsymbol{\theta}} \mathcal{L}(\boldsymbol{\theta})$
         \EndFor
         \State \Return $\boldsymbol{\theta}$
         \end{algorithmic}
-        \noindent\rule{\linewidth}{0.4pt} % Horizontal line or delimiter
+        \noindent\rule{\linewidth}{0.4pt}
         \textbf{Procedure:} \textsc{ScoreMatchingLoss}($\vec x$)
         \begin{algorithmic}[1]
             \State $s_{\boldsymbol{\theta}}(\vec x) \gets \nabla_{\vec x} \log p_{\boldsymbol{\theta}}(\vec x)$
@@ -199,8 +200,8 @@ Then we optimize this objective using Gradient Descent for $T$ Training Iteratio
 \label{sec:gmm_ssm}
 
 To use Sliced instead of Exact Score Matching we can do everything in the same way as above, we only need to replace 
-the objective function with the Sliced Score Matching objective \ref{eq:ssm_vr} from Section \ref{sec:ssm}. \\
-Note that for simplicity we only use one random vector $v_i$ (one slice) for each data point. 
+the objective function with the Sliced Score Matching objective from Equation \ref{eq:ssm_vr}, Section \ref{sec:ssm}. \\
+Note that for simplicity we only use one random vector $\vec v_i$ (one slice) for each data point. 
 
 \begin{equation}
     \min_{\substack{\boldsymbol{\theta}}} \mathcal{L}(\boldsymbol{\theta}) = \frac{1}{N} \sum_{i=1}^{N} \left( \vec{v}_i^T \nabla_{\vec x_i} s_{\boldsymbol{\theta}}(\vec x_i) \vec{v}_i + \frac{1}{2} \norm{  s_{\boldsymbol{\theta}}(\vec x_i) }^2_2 \right)
@@ -213,11 +214,11 @@ Note that for simplicity we only use one random vector $v_i$ (one slice) for eac
         \Require $\vec X = \{\vec x_1, \vec x_2, ..., \vec x_N\}$, $\boldsymbol{\theta}$, $\eta$, $T$
         \For{$t = 1$ to $T$}
             \State $\mathcal{L}(\boldsymbol{\theta}) \gets \frac{1}{N} \sum_{i=1}^N \textsc{SlicedScoreMatchingLoss}(\vec x_i)$
-            \State $\boldsymbol{\theta} \gets \boldsymbol{\theta} + \eta \nabla_{\boldsymbol{\theta}} \mathcal{L}(\boldsymbol{\theta})$
+            \State $\boldsymbol{\theta} \gets \boldsymbol{\theta} - \eta \nabla_{\boldsymbol{\theta}} \mathcal{L}(\boldsymbol{\theta})$
         \EndFor
         \State \Return $\boldsymbol{\theta}$
         \end{algorithmic}
-        \noindent\rule{\linewidth}{0.4pt} % Horizontal line or delimiter
+        \noindent\rule{\linewidth}{0.4pt} 
         \textbf{Procedure:} \textsc{SlicedScoreMatchingLoss}($\vec x$)
         \begin{algorithmic}[1]
             \State $\vec v \gets \mathcal{N}(0, 1)$
@@ -227,7 +228,7 @@ Note that for simplicity we only use one random vector $v_i$ (one slice) for eac
         \end{algorithmic}
 \end{algorithm}
 
-We implemented both Algorithms again using PyTorch \cite{pytorch} and torch.autograd. 
+We implemented both Algorithms again using PyTorch \cite{pytorch} and \texttt{torch.autograd}. 
 
 \subsection{Sampling}
 \label{sec:gmm_sampling}
@@ -242,32 +243,32 @@ Once the Gaussian Mixture Model (GMM) is trained, we can generate new samples fr
     \caption{GMM Sampling}
     \label{alg:gmm_sampling}
     \begin{algorithmic}[1]  
-        \Require $N$, $\boldsymbol{\theta} = \{\boldsymbol{\pi}, \boldsymbol{\mu}, \boldsymbol{\Sigma}\}$
-        \State \texttt{samples} $\gets 0$
-        \For{$i = 1$ to $N$}
-            \State $ k \gets \textsc{Categorical}(\boldsymbol{\pi})$
-            \State \texttt{samples} $\gets \texttt{samples} + \mathcal{N}(\boldsymbol{\mu_k}, \boldsymbol{\Sigma_k})$
-        \EndFor
-        \State \Return \texttt{samples}
+        \Require $\boldsymbol{\theta} = \{\boldsymbol{\pi}, \boldsymbol{\mu}, \boldsymbol{\Sigma}\}$
+            \State $ k \sim \textsc{Categorical}(\boldsymbol{\pi})$
+            \State $ x \sim \mathcal{N}(\boldsymbol{\mu_k}, \boldsymbol{\Sigma_k})$
+        \State \Return $x$
     \end{algorithmic}
 \end{algorithm}
 
 We implemented this in PyTorch \cite{pytorch}, using \\
-\texttt{torch.distributions.MultivariateNormal} for generating samples, and \texttt{torch.Categorical} for component selection.
+\texttt{torch.distributions.MultivariateNormal} for generating samples,\\
+and \texttt{torch.Categorical} for component selection.
 
 \section{Using more complex PCs}
 
-While the model proposed in Section \ref{sec:simple_pc} works well for relatively simple tasks like 2 dimensional density estimation
+While the model proposed in Section \ref{sec:simple_pc} works well for relatively simple tasks like two dimensional density estimation,
 it doesn't perform very well with complex higher dimensional data, e.g. images. 
 
 So to get a wider variety of results we decided to also use a state-of-the-art framework for Probabilistic Circuits called 
 EinsumNetworks \cite{einsum} for modelling more complex higher dimensional datasets. 
 
-For more details on how EinsumNetworks work please refer to \cite{einsum} but in general the same 
-principles as in our GMM apply but due to the deeper structure, the model is much more complex and can approximate more complex distribution. 
-It is also much larger and training takes longer. 
+For more details on EinsumNetworks we refer to \cite{einsum}. In general, the same 
+principles as in our GMM apply but due to the deeper structure, the model is much more complex and can approximate more complex distributions. 
+It also has a lot more trainable parameters and thus training takes more time. 
 
 However implementing the training of an EinsumNetwork with our targeted algorithms is basically the same 
-as in the GMM. Note that training with EM already comes with the framework, so we will leave this out. \\
+as in the GMM case. Note that training with EM already comes with the framework, so we will leave this out. \\
 For all other algorithms, we can apply them in the exact same way as described in Section \ref{sec:simple_pc} above, only needing 
-to switch out the calculation of $\log p_{\boldsymbol{\theta}(\vec x)}$ to the log-density function the EinsumNetwork framework provides. 
+to switch out the calculation of $\log p_{\boldsymbol{\theta}}(\vec x)$ to the log-density function the EinsumNetwork framework provides. 
+
+\textcolor{red}{TODO: should i mention the github repo here?}

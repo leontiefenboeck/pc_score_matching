@@ -1,2 +1,17 @@
 \chapter{Conclusions and Future Work}
 \label{cha:conclusions}
+
+In this thesis we experimentally tested different methods to train Probabilistic Circuits (PCs), specifically
+we wanted to examine how recent developments in training Energy or Score based Models, namely 
+Sliced Score Matching would transfer to PCs. 
+
+Concluding we can say, we did not recognize any obvious benefits to use Score Matching, wether it being Sliced 
+or Exact, over the conventional Maximum Likelihood Estimation (MLE) using either Gradient Descent 
+or Expectation Maximization. While the Score Matching results were not horrible and even quite reasonable, 
+they always lagged a little behind, in fact in none of our 
+experiments did Score Matching overall perform better than MLE. The Log-Likelihood on the validation set was 
+a little worse, the samples didn't look as compelling and it also took much longer to train. 
+
+We did notice one upside compared to MLE, namely as already discussed the samples for the Image Generation 
+Experiment were noticeably less blurry and more clear, however a lot of the times this came with the downside,
+that more or less only one different image could be generated, i.e. all samples looked quite similar. 

@@ -6,7 +6,7 @@
 \section{2D Density Estimation}
 
 To test the simple model from Section \ref{sec:simple_pc} with the discussed algorithms, so Expectation Maximization (EM), 
-Gradient Descent (GD), Score Matching (SM) and Sliced Score Matching (SSM) from subsections \ref{sec:gmm_em} to \ref{sec:gmm_ssm}, we used some 
+Gradient Descent (GD), Score Matching (SM) and Sliced Score Matching (SSM) from Sections \ref{sec:gmm_em} to \ref{sec:gmm_ssm}, we used some 
 two dimensional data to perform density estimation. 
 
 Samples from the three datasets we used can be seen in Figure \ref{fig:2d_datasets}. \\
@@ -38,11 +38,11 @@ Samples from the three datasets we used can be seen in Figure \ref{fig:2d_datase
 \end{figure}
 
 
-\subsection{Best Possible Results}
+\subsection{Main Experiment}
+\label{sec:best_results}
 
-In the basic first set of experiments we wanted to see the best possible results for each algorithm on each dataset. 
-
-For each dataset we generated 20,000 data points and split them evenly for training and validation. However before the training process can start, recall 
+Here the goal was to achieve the best possible results for each algorithm on each dataset. 
+For this we generated 20,000 data points for each dataset and split them evenly for training and validation. However before the training process can start, recall 
 that our model is governed by the learnable parameters $\boldsymbol \pi$ (mixture weights), $\boldsymbol \mu$ (means of components) and
 $\boldsymbol \Sigma$ (covariance matrices of components) that need to be initialized in some manner and the hyperparameter $K$ (mixture count) that needs to be chosen. 
 
@@ -56,17 +56,15 @@ the covariance matrices $\boldsymbol \Sigma$ as identity matrices of size $D \ti
 \]
 where $D$ is the dimensionality of the data and the means $\boldsymbol \mu$ by computing cluster centers of the data with the sklearn \cite{sklearn} implementation of KMeans. 
 
-As for $K$, trough some initial testing we chose three different values, namely a minimal $K$, that is needed for producing reasonable results, 
-a very large $K$ from which onward there are diminishing returns and a moderate $K$ in the middle between the minimal and the large $K$.
+As for $K$, through some initial testing we chose three different values, namely a minimal $K$, that is needed for producing reasonable results, 
+a very large $K$ from which onward there are diminishing returns and a moderate $K$ in the middle.
 
-Now for the training process also recall that it is governed by the hyperparameter number of iterations $T$ for all algorithms and 
-the hyperparameter learning rate $\eta$ for all the gradient-based algorithms (GD, SM, SSM).
-To choose these parameters we fixed $K$ to one of the three chosen values and did cross-validation by computing the validation set Log-Likelihood 
+For the training process, recall that it is also governed by hyperparameters, namely the number of iterations $T$ for all algorithms and 
+the learning rate $\eta$ for all the gradient-based algorithms (GD, SM, SSM).
+To choose these parameters we fixed $K$ to one of the three chosen values and performed cross-validation by computing the validation set Log-Likelihood 
 of the models with all possible remaining hyperparameter combinations and choosing the combination with the highest Log-Likelihood.
 
-Results, more specifically Log-Likelihood, estimated densities and samples for all datasets and all values of $K$ with the best possible training-specific 
-hyperparameters can be seen in the following three pages. Note that when setting the same random seed all of these results should be 
-reproducible.
+Results, more specifically Log-Likelihood, estimated densities and samples for all datasets and all values of $K$ can be seen in the following three pages.  
 
 \newpage
 \begin{figure}[H]
@@ -103,14 +101,14 @@ reproducible.
 \end{figure}
 \newpage
 
-\subsection{Performance Analysis}
+\subsection{Further Analysis}
 \label{sec:2d_exp2}
+
+\subsubsection{Training Time}
 
 To gain further insight in how the learning process differs for each algorithm we chose a dataset and a set of hyperparameters
 where all algorithms perform somewhat similar and analyzed the Negative Log-Likelihood (NLL) over Training Iterations. 
-Estimated density and samples and now also the mentioned training curve can be seen in Figure \ref{fig:halfmoons_10_logp}.
-
-Note that because all algorithms except Sliced Score Matching are deterministic, we did multiple runs ($10$) for SSM and plotted the mean value 
+Estimated density and samples and now also the mentioned training curve can be seen in Figure \ref{fig:halfmoons_10_logp}. Because all algorithms except Sliced Score Matching are deterministic, we did multiple runs ($10$) for SSM and plotted the mean value 
 with the standard deviation shaded. 
 
 \begin{figure}[H]
@@ -121,16 +119,15 @@ with the standard deviation shaded.
     \label{fig:halfmoons_10_logp}
 \end{figure}
 
-First, we see that on average SSM performs somewhere in the ballpark of SM but usually a little worse, which 
-makes sense since SSM is only an approximation of SM. Sometimes the stochastic nature of SSM can also 
+First, we see that on average SSM performs very similar to SM (usually a little worse), which 
+given that SSM is an approximation of SM, can be expected. Sometimes the stochastic nature of SSM can also 
 by sheer luck yield better results. Note that when increasing the number of slices, which were $1$ for all 
 experiments up until now, we saw that SSM increasingly gives a better approximation of SM.
 
-Another clearly noticeable result is that EM appears to learn the fastest and all the gradient-based algorithms
-behave quite similarly. This was reproducible for all other datasets and hyperparameter configurations as well. 
+Also clearly noticeable is that EM appears to learn the fastest and all the gradient-based algorithms
+behave quite similarly. This was similar for all other datasets and hyperparameter configurations as well. 
 However note that in the Figures above, we are only looking at NLL over Epochs, so we are not accounting for the 
-duration of a single epoch, but this matters a lot in practice.
-When running all algorithms for a specific amount of time, the differences increase considerably. 
+duration of a single epoch. When running all algorithms for a specific amount of time, the differences increase considerably. 
 
 \begin{figure}[H]
     \centering
@@ -142,8 +139,18 @@ When running all algorithms for a specific amount of time, the differences incre
 EM and GD appear considerably faster than their Score Matching alternatives, in fact while GD on average only takes 
 around $1.1$ times as long as EM, SSM takes around twice as long and SM around $2.5$ times as long.
 
-\subsection{Random Initialization}
+\subsubsection{Initialization}
 \label{sec:2d_exp3}
+
+Another point we wanted to examine was the initialization of the learnable parameters. 
+With our data it is quite straightforward to initialize the means, which up to now has been done with KMeans, but this is not always the case.
+Also initializing the weights uniformly conveniently makes a lot of sense with our data, however the initialization of both these 
+parameters can be problematic and has to be done randomly quite often. \\
+Therefore we also analyzed how each algorithm 
+behaves when these parameters are initialized randomly. 
+
+To initialize the means we draw $K$ random data points from our training data and 
+to initialize the weights we just draw random numbers from $0$ to $1$ and normalize them so they sum to one.
 
 \begin{figure}[H]
     \centering
@@ -161,17 +168,6 @@ around $1.1$ times as long as EM, SSM takes around twice as long and SM around $
     \label{fig:kmeans_vs_rand}
 \end{figure}
 
-Another point we wanted to examine was the initialization of the learnable parameters. 
-
-With our data it is quite straightforward to initialize the means, which up to now has been done with KMeans, but this is not always the case.
-Also initializing the weights uniformly conveniently makes a lot of sense with our data, however the initialization of both of these 
-learnable parameters can be problematic and a lot of times this has to be done randomly. \\
-Therefore we also analyzed how each algorithm 
-behaves when these parameters are initialized randomly. 
-
-To initialize the means we draw $K$ random data points from our training data and 
-to initialize the weights we just draw random numbers from $0$ to $1$ and normalize them so they sum to one.
-
 In Figure \ref{fig:halfmoons_10_random_logp} the mean Log-Likelihood and standard deviation over $10$ runs with random initialization in each run can be seen. 
 
 \begin{figure}[H]
@@ -181,45 +177,79 @@ In Figure \ref{fig:halfmoons_10_random_logp} the mean Log-Likelihood and standar
     \label{fig:halfmoons_10_random_logp}
 \end{figure}
 
-On this simple dataset it appears that random initialization performs relatively similar to the KMeans initialization when comparing 
-to the NLL over Epochs curve from Figure \ref{fig:halfmoons_10_logp}. For some concrete results (Densities and Samples) refer to the Appendix \ref{sec:app_halfmoons_rand}.
+On this simple dataset it appears that random initialization performs relatively similar to the KMeans initialization when comparing with the NLL over Epochs curve from Figure \ref{fig:halfmoons_10_logp}. For some concrete results (Densities and Samples) refer to the Appendix \ref{sec:app_halfmoons_rand}.
+We repeated Experiments \ref{sec:2d_exp2} and \ref{sec:2d_exp3} for the spirals dataset, results can be found in Appendix \ref{sec:app_spirals}.
 
-We repeated Experiments \ref{sec:2d_exp2} and \ref{sec:2d_exp3} for the spirals dataset, results can be found in the Appendix \ref{sec:app_spirals}.
+\section{Generative Image Modelling}
 
-\section{Images Density Estimation}
+To train a before mentioned EinsumNetwork \cite{einsum} with our targeted algorithms, we used the provided demo-file for the MNIST \cite{mnist} dataset (\texttt{demo\_mnist.py}) and included 
+our algorithms. MNIST is a dataset of handwritten digits (from 0 to 9) and quite popular for image modelling tasks.
+Note that, since training already took quite long, we left out exact Score Matching and only focused on Sliced Score Matching. 
 
-To train an EinsumNetwork with our target algorithms, we used the provided demo which uses either the MNIST of FashionMNIST Dataset \cite{mnist} and integrated 
-our algorithms. Note that we left out Score Matching since training already took very long and we were limited with our compute power. 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.4\textwidth]{figures/einsum/mnist/[]_ground_truth.png}
+    \caption{Samples of MNIST}
+\end{figure}
+
+\subsection{Single Class Training}
+\label{sec:exp_mnist_single}
+
+Here the goal is to produce the best possible samples on single class of MNIST.
 
 We left the model related hyperparameters as they were provided in the framework and only tuned the training specific hyperparameters 
-(iterations and learning rate) to produce the best possible results for each algorithm. 
-On a side note, this setup resulted in $204146$ learnable parameters for the EinsumNetwork, for comparison the most 
-complex 2D model we used with $100$ mixture components had $700$ learnable parameters. 
+(iterations and learning rate for gradient based algorithms and only iterations for EM) to find the best samples for each algorithm. 
 
-Samples and Test Log-Likelihood for three different classes of both MNIST and FashionMNIST can be seen below. \\
-Note that these can't really be reproduced since the demo uses mini-batch learning which introduces stochasticity. 
+We found that, while EM gave quite good samples after only around 10 iterations, SGD and SSM required much longer to converge. 
+More precisely, we saw that training SSM or SGD with an already moderately high learning rate
+of 0.01, needed around 200 iterations to produce good results, which of course increases more if we set a lower learning rate.
+We provide a graph of samples at specific epochs on MNIST class 7 for all algorithms in Figure \ref{fig:mnist_epochs}.\\ 
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{figures/einsum/mnist/epoch_comparison.png}
+    \caption{Samples over epochs for different training algorithms}
+    \label{fig:mnist_epochs}
+\end{figure}
+
+Although increasing the learning rate further mostly worked for SGD, SSM saw vanishing or exploding gradients after some iterations and thus was
+not able to properly finish. Even applying gradient clipping did not really solve this. 
+
+Therefore the best way to train an EinsumNetwork using SSM we could find is to start with a relatively 
+high learning rate of 0.2 or 0.1 and use learning rate decay to decrease it over time. Although
+this could further be specifically tuned for each different MNIST digit, we find that training for 
+20 iterations using an initial learning rate of 0.2 and decaying it with a factor of 0.5 every 5 epochs 
+and additionally using gradient clipping with a threshold of 1.0 was the most practical approach for all classes.
+This approach also improved the SGD results further.
+
+We trained with each algorithm for 20 iterations and used the described approach for SGD and SSM, on three different classes of MNIST. 
+Negative Log Likelihood (NLL) and samples can be seen in the figures below.
+For results on FashionMNIST we refer to to Appendix \ref{sec:app_fashionmnist}. \\
+
+On a side note, this setup resulted in $204146$ learnable parameters in the EinsumNetwork. For comparison the most 
+complex 2D model we used with $100$ mixture components had $700$ learnable parameters. 
 
 \begin{figure}[H]
     \centering
     \begin{subfigure}[b]{0.24\textwidth}
         \centering
-        \includegraphics[width=\textwidth]{figures/einsum/7mnist_ground_truth.png}
+        \includegraphics[width=\textwidth]{figures/einsum/mnist/[7]_ground_truth.png}
         \caption{Ground Truth}
     \end{subfigure}
     \begin{subfigure}[b]{0.24\textwidth}
         \centering
-        \includegraphics[width=\textwidth]{figures/einsum/7mnist_EM.png}
-        \caption{EM (LL: -11570)}
+        \includegraphics[width=\textwidth]{figures/einsum/mnist/[7]_EM.png}
+        \caption{EM (LL: -11576)}
     \end{subfigure}
     \begin{subfigure}[b]{0.24\textwidth}
         \centering
-        \includegraphics[width=\textwidth]{figures/einsum/7mnist_SGD.png} 
-        \caption{SGD (LL: -12925)}
+        \includegraphics[width=\textwidth]{figures/einsum/mnist/[7]_SGD.png} 
+        \caption{SGD (LL: -12972)}
     \end{subfigure}
     \begin{subfigure}[b]{0.24\textwidth}
         \centering
-        \includegraphics[width=\textwidth]{figures/einsum/7mnist_SSM.png}
-        \caption{SSM (LL: -16447)}
+        \includegraphics[width=\textwidth]{figures/einsum/mnist/[7]_SSM.png}
+        \caption{SSM (LL: -16307)}
     \end{subfigure}
     \caption{Samples and Log-Likelihood of MNIST-class 7}
     \label{fig:mnist7}
@@ -229,23 +259,23 @@ Note that these can't really be reproduced since the demo uses mini-batch learni
     \centering
     \begin{subfigure}[b]{0.24\textwidth}
         \centering
-        \includegraphics[width=\textwidth]{figures/einsum/8mnist_ground_truth.png}
+        \includegraphics[width=\textwidth]{figures/einsum/mnist/[8]_ground_truth.png}
         \caption{Ground Truth}
     \end{subfigure}
     \begin{subfigure}[b]{0.24\textwidth}
         \centering
-        \includegraphics[width=\textwidth]{figures/einsum/8mnist_EM.png}
-        \caption{EM (LL: -15984)}
+        \includegraphics[width=\textwidth]{figures/einsum/mnist/[8]_EM.png}
+        \caption{EM (LL: -15945)}
     \end{subfigure}
     \begin{subfigure}[b]{0.24\textwidth}
         \centering
-        \includegraphics[width=\textwidth]{figures/einsum/8mnist_SGD.png} 
-        \caption{SGD (LL: -17996)}
+        \includegraphics[width=\textwidth]{figures/einsum/mnist/[8]_SGD.png} 
+        \caption{SGD (LL: -17796)}
     \end{subfigure}
     \begin{subfigure}[b]{0.24\textwidth}
         \centering
-        \includegraphics[width=\textwidth]{figures/einsum/8mnist_SSM.png}
-        \caption{SSM (LL: -22213)}
+        \includegraphics[width=\textwidth]{figures/einsum/mnist/[8]_SSM.png}
+        \caption{SSM (LL: -22654)}
     \end{subfigure}
     \caption{Samples and Log-Likelihood of MNIST-class 8}
 \end{figure}
@@ -254,109 +284,59 @@ Note that these can't really be reproduced since the demo uses mini-batch learni
     \centering
     \begin{subfigure}[b]{0.24\textwidth}
         \centering
-        \includegraphics[width=\textwidth]{figures/einsum/4mnist_ground_truth.png}
+        \includegraphics[width=\textwidth]{figures/einsum/mnist/[4]_ground_truth.png}
         \caption{Ground Truth}
     \end{subfigure}
     \begin{subfigure}[b]{0.24\textwidth}
         \centering
-        \includegraphics[width=\textwidth]{figures/einsum/4mnist_EM.png}
-        \caption{EM (LL: -13131)}
+        \includegraphics[width=\textwidth]{figures/einsum/mnist/[4]_EM.png}
+        \caption{EM (LL: -13301)}
     \end{subfigure}
     \begin{subfigure}[b]{0.24\textwidth}
         \centering
-        \includegraphics[width=\textwidth]{figures/einsum/4mnist_SGD.png} 
-        \caption{SGD (LL: -15170)}
+        \includegraphics[width=\textwidth]{figures/einsum/mnist/[4]_SGD.png} 
+        \caption{SGD (LL: -15626)}
     \end{subfigure}
     \begin{subfigure}[b]{0.24\textwidth}
         \centering
-        \includegraphics[width=\textwidth]{figures/einsum/4mnist_SSM.png}
-        \caption{SSM (LL: -20513)}
+        \includegraphics[width=\textwidth]{figures/einsum/mnist/[4]_SSM.png}
+        \caption{SSM (LL: -20309)}
     \end{subfigure}
     \caption{Samples and Log-Likelihood of MNIST-class 4}
 \end{figure}
 
+Looking at these figures, specifically the NLL, we see a quite similar picture as in the 2D Density Estimation emerge. 
+EM and SGD performed on par while SSM lagged a little behind. 
+Also the time needed for training reflected the 2D counterpart, though the gap increased even more, meaning EM and SGD still took roughly the same while SSM now took roughly four times as long. 
+
+When directly looking at the samples the results appear to be a bit different. While EM and SGD roughly provided the same samples, with SSM, they seemed to be the least "blurry" or most "clear", however with the caveat
+that sometimes noisy artifacts appear, best scene with the 8 class. We also found that when introducing 
+a weight decay in the optimizer, the number of these artifacts increase. Furthermore it often seemed that
+one particular type of the provided digit dominated, meaning one weight in the mixture approaches $1$ while 
+the others remain nearly at $0$ giving all samples a very similar look, best scene with the 7 class. \\
+
+Finally we also performed image reconstructions, where a certain region of the image is masked out and then reconstructed using the trained model.
+The masked out images as well as the reconstructions for the same MNIST digits can be seen below.
+
 \begin{figure}[H]
     \centering
-    \begin{subfigure}[b]{0.24\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{figures/einsum/1fashion-mnist_ground_truth.png}
-        \caption{Ground Truth}
-    \end{subfigure}
-    \begin{subfigure}[b]{0.24\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{figures/einsum/1fashion-mnist_EM.png}
-        \caption{EM (LL: -8230)}
-    \end{subfigure}
-    \begin{subfigure}[b]{0.24\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{figures/einsum/1fashion-mnist_SGD.png} 
-        \caption{SGD (LL: -8142)}
-    \end{subfigure}
-    \begin{subfigure}[b]{0.24\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{figures/einsum/1fashion-mnist_SSM.png}
-        \caption{SSM (LL: -10797)}
-    \end{subfigure}
-    \caption{Samples and Log-Likelihood of FashionMNIST-class 1}
+    \includegraphics[width=\textwidth]{figures/einsum/mnist/reconstructions_7.png}
+    \caption{Masked images and reconstructions of MNIST-class 7}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \begin{subfigure}[b]{0.24\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{figures/einsum/2fashion-mnist_ground_truth.png}
-        \caption{Ground Truth}
-    \end{subfigure}
-    \begin{subfigure}[b]{0.24\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{figures/einsum/2fashion-mnist_EM.png}
-        \caption{EM (LL: -11973)}
-    \end{subfigure}
-    \begin{subfigure}[b]{0.24\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{figures/einsum/2fashion-mnist_SGD.png} 
-        \caption{SGD (LL: -12909)}
-    \end{subfigure}
-    \begin{subfigure}[b]{0.24\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{figures/einsum/2fashion-mnist_SSM.png}
-        \caption{SSM (LL: -17594)}
-    \end{subfigure}
-    \caption{Samples and Log-Likelihood of FashionMNIST-class 2}
+    \includegraphics[width=\textwidth]{figures/einsum/mnist/reconstructions_8.png}
+    \caption{Masked images and reconstructions of MNIST-class 8}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \begin{subfigure}[b]{0.24\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{figures/einsum/9fashion-mnist_ground_truth.png}
-        \caption{Ground Truth}
-    \end{subfigure}
-    \begin{subfigure}[b]{0.24\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{figures/einsum/9fashion-mnist_EM.png}
-        \caption{EM (LL: -11173)}
-    \end{subfigure}
-    \begin{subfigure}[b]{0.24\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{figures/einsum/9fashion-mnist_SGD.png} 
-        \caption{SGD (LL: -11632)}
-    \end{subfigure}
-    \begin{subfigure}[b]{0.24\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{figures/einsum/9fashion-mnist_SSM.png}
-        \caption{SSM (LL: -15864)}
-    \end{subfigure}
-    \caption{Samples and Log-Likelihood of FashionMNIST-class 9}
+    \includegraphics[width=\textwidth]{figures/einsum/mnist/reconstructions_4.png}
+    \caption{Masked images and reconstructions of MNIST-class 4}
 \end{figure}
 
-The main findings were quite similar to the 2D Density Estimation Results. EM and SGD performed quite similar and SSM lagged a little behind. 
-Also the training iterations needed and the training time reflected the 2D counterpart. 
+\subsection{Multi Class Training}
+\label{sec:exp_mnist_multi}
 
-Additionally we found, that in the samples SSM often was the least "blurry", but on the other hand SSM seemed to often only train 
-one particular type of the provided digit or fashion-piece, best seen in \ref{fig:mnist7}. This happens because one weight in the mixture approaches $1$ while 
-all others are at nearly $0$. \\
-It is also noteworthy that EM and SGD were very robust with regard to the training parameters, they nearly always finished and produced at least reasonable results. 
-SSM was very fragile especially when it came to the learning rate, where when choosing a low learning rate it took way too many iterations 
-and when choosing a too high learning rate the gradients either vanished or exploded. Eventually we decided to decay the learning rate over 
-the iterations but this decay process also had to be tuned for each dataset. 
+
