@@ -1,6 +1,7 @@
 import os
 import torch
 from tqdm import tqdm
+import numpy as np
 
 from EinsumNetwork import Graph, EinsumNetwork
 import utils
@@ -8,7 +9,7 @@ import utils
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 algorithms = ['SSM', 'SGD', 'EM']
-# algorithms = ['EM']
+algorithms = ['SSM']
 
 dataset = 'mnist'       # choose either mnist or fashion-mnist
 
@@ -16,14 +17,15 @@ dataset = 'mnist'       # choose either mnist or fashion-mnist
 exponential_family = EinsumNetwork.BinomialArray
 exponential_family_args = {'N': 255}
 
-classes = [6]
+classes = [7] # in which mnist class to train on
 
 n_slices = 1 # number of slices for SSM
 
-num_epochs = 50
-lr = 0.1
+num_epochs = 20
+lr = 0.2
 lr_decay = 0.5
-lr_decay_step = 10
+lr_decay_step = 5
+clip_grad = True
 
 batch_size = 100
 
@@ -52,7 +54,6 @@ for a in algorithms:
 
     if a == 'EM': 
         use_em = True 
-        epoch_count = 5
 
     args = EinsumNetwork.Args(
             num_var=train_x.shape[1],
@@ -70,7 +71,7 @@ for a in algorithms:
     einet.initialize()
     einet.to(device)
 
-    optimizer = torch.optim.Adam(einet.parameters(), lr=lr, weight_decay=1e-6)
+    optimizer = torch.optim.Adam(einet.parameters(), lr=lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, lr_decay_step, lr_decay)
 
     train_losses, val_losses = [], []
@@ -104,7 +105,7 @@ for a in algorithms:
 
                 optimizer.zero_grad()
                 loss.backward()
-                torch.nn.utils.clip_grad_norm_(einet.parameters(), 1.0)
+                if clip_grad: torch.nn.utils.clip_grad_norm_(einet.parameters(), 1.0)
                 optimizer.step()
 
         if a != 'EM': scheduler.step()
@@ -125,15 +126,36 @@ for a in algorithms:
     print(f"EVAL:   train LL {train_ll:.02f}   valid LL {valid_ll:.02f}   test LL {test_ll:.02f} \n")
 
     # plot train and val losses
-    utils.plot_losses(train_losses, val_losses, os.path.join(save_dir, f"{dataset}{classes}_{a}_losses.png"))
+    # utils.plot_losses(train_losses, val_losses, os.path.join(save_dir, f"{dataset}{classes}_{a}_losses.png"))
     
-    # draw some samples 
+    # sampling
     samples = einet.sample(num_samples=25).cpu().numpy()
     samples = samples.reshape((-1, 28, 28))
-    utils.save_image_stack(samples, 5, 5, os.path.join(save_dir, f"{dataset}{classes}_{a}_samples.png"), margin_gray_val=0.)
+    utils.save_image_stack(samples, 5, 5, os.path.join(save_dir, f"{dataset}{classes}_{a}_samples_{num_epochs}_{lr}.png"), margin_gray_val=0.)
 
-    # perform reconstruction
-    
+    # reconstruction 
+    image_scope = np.array(range(height * width)).reshape(height, width)
+    marginalize_idx = list(image_scope[0:round(height/2), :].reshape(-1))
+    keep_idx = [i for i in range(width*height) if i not in marginalize_idx]
+    einet.set_marginalization_idx(marginalize_idx)
+
+    masked_images = test_x[0:25, :].clone().cpu().numpy()
+    masked_images[:, marginalize_idx] = 0 
+    masked_images = masked_images.reshape((-1, 28, 28))
+    # utils.save_image_stack(masked_images, 5, 5, os.path.join(save_dir, f"{dataset}{classes}_{a}_masked_images_{num_epochs}_{lr}.png"), margin_gray_val=0.)
+
+    num_samples = 10
+    samples = None
+    for k in range(num_samples):
+        if samples is None:
+            samples = einet.sample(x=test_x[0:25, :]).cpu().numpy()
+        else:
+            samples += einet.sample(x=test_x[0:25, :]).cpu().numpy()
+    samples /= num_samples
+    samples = samples.squeeze()
+
+    samples = samples.reshape((-1, 28, 28))
+    # utils.save_image_stack(samples, 5, 5, os.path.join(save_dir, f"{dataset}{classes}_{a}_sample_reconstruction_{num_epochs}_{lr}.png"), margin_gray_val=0.)
 
 # ground truth
 ground_truth = test_x[0:25, :].cpu().numpy()
