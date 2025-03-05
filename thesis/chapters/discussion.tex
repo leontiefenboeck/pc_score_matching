@@ -3,28 +3,57 @@
 
 \section{Interpretation of Experimental Results}
 
-Looking at the best possible results \ref{sec:best_results} from the 2D Density Estimation Experiments, we can see that
-Maximum Likelihood Estimation with Gradient Descent provides the highest Log-Likelihood values for all scenarios. 
-This could be somewhat expected, since here we are directly maximizing the Likelihood, whereas with Score Matching the Likelihood
-is only indirectly optimized by minimizing the Score Matching Objective which comes from Fisher Divergence. 
-However, also when looking at the density and sample plots, Gradient Descent objectively produces the nicest results, meaning the least 
-noisy and the most accurately distributed, so for example no made up high density regions where there shouldn't be one. 
-This wasn't necessarily expected.  
-Also not expected was that where EM provided similar results to Gradient Descent for small $K$, EM struggled with large $K$, where it found
-really small very high density Gaussians that messed up the sample plots. 
+\subsection{2D Density Estimation}
 
-Still considering these plots it was interesting how well Sliced Score Matching with only $1$ slice worked as an approximation for Exact Score Matching,
-which we empirically confirmed later. 
+Looking again at the main experiment in Section \ref{sec:best_results} from the 2D Density Estimation, we can see that
+Maximum Likelihood Estimation with Gradient Descent or EM provided the highest Log-Likelihood values for all scenarios --except where EM failed and produced very small high density regions--. 
+This could be somewhat expected, since here we are directly maximizing the Likelihood, whereas with the Score Matching algorithms the Likelihood
+is only indirectly optimized by minimizing the Score Matching Objective, that is derived from the Fisher Divergence. 
+However, also when looking at the density and sample plots, Gradient Descent objectively produced the nicest results, meaning the least 
+noisy and the most accurately distributed, which wasn't necessarily expected.  
+Also not expected was that EM in many cases struggled with large $K$, finding very small high density regions.
+Still considering these plots it was interesting that Sliced Score Matching with only $1$ slice was able to approximate exact Score Matching so well.
 
-When looking at the Performance Analysis \ref{sec:2d_exp2} the main takeaways are that EM optimizes the fastest epoch-wise and overall time-wise, 
+When looking at the Analysis in Section \ref{sec:2d_exp2} the main takeaways are that EM is the fastest epoch-wise and also overall time-wise, 
 though GD is only slightly slower. As expected the many additional calculations for the Score Matching Algorithms provide a huge 
-performance penalty. 
+performance penalty. Another thing to reiterate here is the time-wise difference between SM and SSM. In our measurements
+SSM was only very slightly faster than SM, which does not suggest a huge improvement. 
+However remember that SM scales with the dimensionality of the data, so in our 2D scenario, with
+1-slice SSM, basically only one additional calculation is needed. In higher dimensions this difference would be much more pronounced. 
 
-For random initialization \ref{sec:2d_exp3} it was somewhat surprising how similar all algorithms performed when compared 
+For random initialization from Section \ref{sec:2d_exp3} it was somewhat surprising how similar all algorithms performed when compared 
 to their deterministic KMeans counterpart. The Log-Likelihood
 values were usually only slightly worse and the same goes for the density and sample plots. However we noticed that for the more 
 complex spirals dataset the difference was already larger than for the simple halfmoon dataset. So we expect that the more complex 
 the dataset is, the worse random initialization performs.  
 
 Overall we can conclude that for 2D Density Estimation, Gradient Descent provided the best results, had the best robustness to 
-different hyperparameter settings and was nearly tied as the fastest algorithm to optimize. 
+different hyperparameter settings and was nearly tied as the fastest algorithm. 
+While the Score Matching algorithms were not much worse Log-likelihood wise and provided some interesting and unique samples,
+the overall performance and also longer training time make them less attractive for this task. \\
+
+\subsection{Image Modelling}
+
+Now considering the image modelling using MNIST from Section \ref{sec:exp_image} 
+we can see similar patterns emerge. EM and SGD perform very similarly time-wise and 
+result-wise, while SSM lags behind in both aspects.
+
+The main findings we want to highlight however are: In the single-class scenario, while EM and SGD both produce reasonable 
+distinct samples they are quite blurry and have very blurry artifacts. On the other 
+hand SSM produces very sharp samples, but they are not very diverse and also sometimes exhibit noisy artifacts.
+One explanation for this could be that with SSM one, or a few, weights in the mixture dominate, 
+growing quite large while the others remain at $0$, thus only ever producing the same samples.
+
+When looking at the multi-class scenario we see the same behavior for EM and SGD, meaning 
+they produce distinct and recognizably different samples, though now even more blurry and with more
+artifacts. For SSM, we see that the samples still are the most sharp with the least artifacts
+and also much more diverse compared to before, but they appear to be different superpositions 
+of the classes they are trained on, meaning the different classes are not really 
+recognizable, this is best seen with classes 2 and 4.
+Considering this, it could be possible that a superposition is also
+learned in the single-class scenarios, giving another explanation for the similar samples.
+
+Concluding we can say that for image modelling still EM or SGD are the best choices, 
+though here SSM provides even more interesting samples --especially the superior sharpness-- that show a lot of potential.
+
+

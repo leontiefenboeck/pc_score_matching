@@ -4,14 +4,23 @@
 In this thesis we experimentally tested different methods to train Probabilistic Circuits (PCs), specifically
 we wanted to examine how recent developments in training Energy or Score based Models, namely 
 Sliced Score Matching would transfer to PCs. 
+We achieved this by implementing the algorithms and conducting experiments on 2D Density Estimation
+and Image Modelling. In all relevant experiments we compared performance by producing samples 
+(and density plots) and measuring the Log-Likelihood.
 
 Concluding we can say, we did not recognize any obvious benefits to use Score Matching, wether it being Sliced 
 or Exact, over the conventional Maximum Likelihood Estimation (MLE) using either Gradient Descent 
-or Expectation Maximization. While the Score Matching results were not horrible and even quite reasonable, 
-they always lagged a little behind, in fact in none of our 
-experiments did Score Matching overall perform better than MLE. The Log-Likelihood on the validation set was 
-a little worse, the samples didn't look as compelling and it also took much longer to train. 
+or Expectation Maximization, when just looking at the Log-Likelihood measurements or the time it 
+took to train a model. 
+When considering the samples, especially for the Image Modelling task, we saw that Sliced Score Matching
+produced very sharp and less noisy samples compared to the MLE counterparts.
+These huge improvements in image quality, however came with the downside that 
+samples were less diverse in the single-class scenario and in the multi-class scenario
+the different classes were not even recognizable.
 
-We did notice one upside compared to MLE, namely as already discussed the samples for the Image Generation 
-Experiment were noticeably less blurry and more clear, however a lot of the times this came with the downside,
-that more or less only one different image could be generated, i.e. all samples looked quite similar. 
+For future work we suggest to further investigate the reasons for the increased sharpness and the 
+lack of diversity as well as the superposition of classes in SSM, with the goal of finding 
+an algorithm that combines diversity and sample quality. 
+For now one possible solution, at least when trying to train on an entire dataset with 
+multiple classes, one could use Sliced Score Matching to train a model on each class individually and 
+then create a mixture to combine them. Though this does not solve the problem in essence.

@@ -101,6 +101,19 @@ Results, more specifically Log-Likelihood, estimated densities and samples for a
 \end{figure}
 \newpage
 
+Looking at these results, specifically at the LL, we see that GD 
+usually performs the best, EM, depending on the scenario, in second place
+and SM and SSM, with very similar results, in last place.
+
+Analyzing the estimated densities is more difficult. Generally GD also 
+appears to produce the best results, meaning mostly noise free, evenly distributed densities. 
+EM behaves very similar when having a low K, but with both the halfmoons and spirals 
+having a higher K produces densities that are very dense in a few small points, producing samples
+that appear empty in most places except these very high density regions. 
+SM and SSM in most cases produce the most noisy, unevenly distributed, densities. However 
+with the halfmoons dataset with K equaling 12 or 24 we see both SM and SSM producing 
+very dense but still correct densities, that set them apart from the other algorithms.
+
 \subsection{Further Analysis}
 \label{sec:2d_exp2}
 
@@ -181,18 +194,21 @@ On this simple dataset it appears that random initialization performs relatively
 We repeated Experiments \ref{sec:2d_exp2} and \ref{sec:2d_exp3} for the spirals dataset, results can be found in Appendix \ref{sec:app_spirals}.
 
 \section{Generative Image Modelling}
+\label{sec:exp_image}
 
 To train a before mentioned EinsumNetwork \cite{einsum} with our targeted algorithms, we used the provided demo-file for the MNIST \cite{mnist} dataset (\texttt{demo\_mnist.py}) and included 
 our algorithms. MNIST is a dataset of handwritten digits (from 0 to 9) and quite popular for image modelling tasks.
 Note that, since training already took quite long, we left out exact Score Matching and only focused on Sliced Score Matching. 
+In all following results we also ever only used one slice, since having more did not significantly 
+change the results. \\
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.4\textwidth]{figures/einsum/mnist/[]_ground_truth.png}
+    \includegraphics[width=0.3\textwidth]{figures/einsum/mnist/[]_ground_truth.png}
     \caption{Samples of MNIST}
 \end{figure}
 
-\subsection{Single Class Training}
+\subsection{Single Class}
 \label{sec:exp_mnist_single}
 
 Here the goal is to produce the best possible samples on single class of MNIST.
@@ -207,7 +223,7 @@ We provide a graph of samples at specific epochs on MNIST class 7 for all algori
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{figures/einsum/mnist/epoch_comparison.png}
+    \includegraphics[width=\textwidth]{figures/einsum/mnist/epoch_comparison.png}
     \caption{Samples over epochs for different training algorithms}
     \label{fig:mnist_epochs}
 \end{figure}
@@ -223,7 +239,7 @@ and additionally using gradient clipping with a threshold of 1.0 was the most pr
 This approach also improved the SGD results further.
 
 We trained with each algorithm for 20 iterations and used the described approach for SGD and SSM, on three different classes of MNIST. 
-Negative Log Likelihood (NLL) and samples can be seen in the figures below.
+Log Likelihood (NLL) and samples can be seen in the figures below.
 For results on FashionMNIST we refer to to Appendix \ref{sec:app_fashionmnist}. \\
 
 On a side note, this setup resulted in $204146$ learnable parameters in the EinsumNetwork. For comparison the most 
@@ -305,38 +321,130 @@ complex 2D model we used with $100$ mixture components had $700$ learnable param
     \caption{Samples and Log-Likelihood of MNIST-class 4}
 \end{figure}
 
-Looking at these figures, specifically the NLL, we see a quite similar picture as in the 2D Density Estimation emerge. 
+Looking at these figures, specifically the LL, we see a quite similar picture as in the 2D Density Estimation emerge. 
 EM and SGD performed on par while SSM lagged a little behind. 
-Also the time needed for training reflected the 2D counterpart, though the gap increased even more, meaning EM and SGD still took roughly the same while SSM now took roughly four times as long. 
+Also the time needed for training reflected the 2D counterpart, though the gap increased even more, meaning EM and SGD roughly took the same amount of time, while SSM took approximately four times as long when comparing to the two other algorithms. 
 
-When directly looking at the samples the results appear to be a bit different. While EM and SGD roughly provided the same samples, with SSM, they seemed to be the least "blurry" or most "clear", however with the caveat
-that sometimes noisy artifacts appear, best scene with the 8 class. We also found that when introducing 
+When directly looking at the samples the results appear to be a bit different. While EM and SGD provided more or less the same samples, with SSM, they seemed to be the least "blurry" or most "clear", however with the caveat
+that sometimes noisy artifacts appear, best scene with class 8. We also found that when introducing 
 a weight decay in the optimizer, the number of these artifacts increase. Furthermore it often seemed that
-one particular type of the provided digit dominated, meaning one weight in the mixture approaches $1$ while 
-the others remain nearly at $0$ giving all samples a very similar look, best scene with the 7 class. \\
+one particular type of the provided digit dominated, giving all samples a very similar look, best scene with class 7. \\
 
 Finally we also performed image reconstructions, where a certain region of the image is masked out and then reconstructed using the trained model.
-The masked out images as well as the reconstructions for the same MNIST digits can be seen below.
+The masked out images as well as the reconstructions for the same MNIST digits as used before can be seen below.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=\textwidth]{figures/einsum/mnist/reconstructions_7.png}
+    \includegraphics[width=0.8\textwidth]{figures/einsum/mnist/reconstructions_7.png}
     \caption{Masked images and reconstructions of MNIST-class 7}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=\textwidth]{figures/einsum/mnist/reconstructions_8.png}
+    \includegraphics[width=0.8\textwidth]{figures/einsum/mnist/reconstructions_8.png}
     \caption{Masked images and reconstructions of MNIST-class 8}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=\textwidth]{figures/einsum/mnist/reconstructions_4.png}
+    \includegraphics[width=0.8\textwidth]{figures/einsum/mnist/reconstructions_4.png}
     \caption{Masked images and reconstructions of MNIST-class 4}
 \end{figure}
 
-\subsection{Multi Class Training}
+The results here are quite on par with the samples, not revealing too much 
+new information.
+
+\subsection{Multi Class}
 \label{sec:exp_mnist_multi}
 
+Since in real world scenarios it is seldom the case that we only want to model one specific 
+class of the data, we also trained the EinsumNetwork
+on multiple classes of MNIST at the same time.
 
+We again trained for 20 iterations with each algorithm, though we had to adjust the initial learning rate for SSM 
+to 0.1 in all scenarios, and the decay to 0.5 every 2 epochs when training on the entire MNIST dataset, meaning all classes.
+Results, meaning samples and LL, for three different combinations can be seen below. \\
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.24\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/einsum/mnist/[2, 4]_ground_truth.png}
+        \caption{Ground Truth}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.24\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/einsum/mnist/[2, 4]_EM.png}
+        \caption{EM (LL: -17219)}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.24\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/einsum/mnist/[2, 4]_SGD.png} 
+        \caption{SGD (LL: -19385)}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.24\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/einsum/mnist/[2, 4]_SSM.png}
+        \caption{SSM (LL: -25558)}
+    \end{subfigure}
+    \caption{Samples and Log-Likelihood of MNIST-classes 2 and 4}
+    \label{fig:mnist7}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.24\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/einsum/mnist/[3, 4, 7]_ground_truth.png}
+        \caption{Ground Truth}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.24\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/einsum/mnist/[3, 4, 7]_EM.png}
+        \caption{EM (LL: -16571)}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.24\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/einsum/mnist/[3, 4, 7]_SGD.png} 
+        \caption{SGD (LL: -17800)}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.24\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/einsum/mnist/[3, 4, 7]_SSM.png}
+        \caption{SSM (LL: -22736)}
+    \end{subfigure}
+    \caption{Samples and Log-Likelihood of MNIST-classes 3, 4 and 7}
+    \label{fig:mnist7}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.24\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/einsum/mnist/[]_ground_truth.png}
+        \caption{Ground Truth}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.24\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/einsum/mnist/[]_EM.png}
+        \caption{EM (LL: -17322)}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.24\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/einsum/mnist/[]_SGD.png} 
+        \caption{SGD (LL: -18596)}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.24\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/einsum/mnist/[]_SSM.png}
+        \caption{SSM (LL: -25221)}
+    \end{subfigure}
+    \caption{Samples and Log-Likelihood of all MNIST-classes}
+    \label{fig:mnist7}
+\end{figure}
+
+The NLLs, although being higher overall, relatively are also very similar to before. 
+EM and SGD samples are quite similar again and SSM samples also appear to be the most "clear", 
+however this time the samples are clearly worse. While EM and SGD do not 
+produce perfect samples, different classes are distinguishable in most, this is not the case for SSM. 
+Here the samples appear to be more of a superposition of the different classes, which is not what we want.

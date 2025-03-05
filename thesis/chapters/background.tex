@@ -44,7 +44,17 @@ We can sample from the distribution to generate new data points, for example to 
 we can compute more complex inference tasks by using rules from probability theory, like the marginal probability (MAR) or 
 the conditional probability (CON) \cite{pc_intro}.
 
-TODO MAR AND CON
+The marginal probability function $p(x)$ is the probability of observing $x$ regardless of the value of $y$. 
+It is computed by integrating over all possible values of $y$:
+\[
+    p(x) = \int p(x, y) \, dy
+\]
+
+The conditional probability function $p(x|y)$ is the probability of observing $x$ given $y$.
+It is computed by dividing the joint probability by the marginal probability of $y$:
+\[
+    p(x|y) = \frac{p(x, y)}{p(y)}
+\]
 
 \subsection{Modelling a Density}
 \label{sec:modelling_a_density}

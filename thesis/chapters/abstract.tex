@@ -1,1 +1,13 @@
 \chapter{Abstract}
+
+Probabilistic Circuits (PCs) are a class of tractable 
+probabilistic models that have seen much interest in recent years. 
+By only introducing complexity in a structured manner, they are expressive 
+and yet able to compute many inference tasks exactly and efficiently at the same time.
+While PCs have demonstrated success in different scenarios, the methods of training them remain an active research topic.
+In this thesis, we empirically investigate different methods to train PCs. We focus 
+on Score Matching objectives, which are usually used in Energy Based Models (EBMs), 
+and work with the gradient (”scores”) of the log density function instead of the density function itself.
+We compare the performance of Exact as well as Sliced Score Matching with the
+current standard to train PCs, namely Maximum Likelihood Estimation (MLE)
+using either Stochastic Gradient Descent (SGD) or Expectation Maximization (EM).
