@@ -200,7 +200,7 @@ To train a before mentioned EinsumNetwork \cite{einsum} with our targeted algori
 our algorithms. MNIST is a dataset of handwritten digits (from 0 to 9) and quite popular for image modelling tasks.
 Note that, since training already took quite long, we left out exact Score Matching and only focused on Sliced Score Matching. 
 In all following results we also ever only used one slice, since having more did not significantly 
-change the results. \\
+change the results and decreased training time. \\
 
 \begin{figure}[H]
     \centering
@@ -211,7 +211,7 @@ change the results. \\
 \subsection{Single Class}
 \label{sec:exp_mnist_single}
 
-Here the goal is to produce the best possible samples on single class of MNIST.
+Here the goal is to produce the best possible samples on a single class, meaning one type of digit, of MNIST.
 
 We left the model related hyperparameters as they were provided in the framework and only tuned the training specific hyperparameters 
 (iterations and learning rate for gradient based algorithms and only iterations for EM) to find the best samples for each algorithm. 

@@ -21,6 +21,11 @@ the different classes were not even recognizable.
 For future work we suggest to further investigate the reasons for the increased sharpness and the 
 lack of diversity as well as the superposition of classes in SSM, with the goal of finding 
 an algorithm that combines diversity and sample quality. 
-For now one possible solution, at least when trying to train on an entire dataset with 
+For now to provide a possible solution, at least when trying to train on an entire dataset with 
 multiple classes, one could use Sliced Score Matching to train a model on each class individually and 
 then create a mixture to combine them. Though this does not solve the problem in essence.
+
+Another path of possible future research is to use exact Score Matching in combination with
+PCs. We hypothesize that, due to the nature of PCs, exact Score Matching 
+could be implemented in a more efficient way than in general Energy Based Models, reducing 
+the computational overhead and making it more feasible to use in practice.
