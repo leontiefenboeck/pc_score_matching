@@ -200,7 +200,7 @@ To train a before mentioned EinsumNetwork \cite{einsum} with our targeted algori
 our algorithms. MNIST is a dataset of handwritten digits (from 0 to 9) and quite popular for image modelling tasks.
 Note that, since training already took quite long, we left out exact Score Matching and only focused on Sliced Score Matching. 
 In all following results we also ever only used one slice, since having more did not significantly 
-change the results and decreased training time. \\
+change the results and increased training time. \\
 
 \begin{figure}[H]
     \centering
@@ -217,8 +217,8 @@ We left the model related hyperparameters as they were provided in the framework
 (iterations and learning rate for gradient based algorithms and only iterations for EM) to find the best samples for each algorithm. 
 
 We found that, while EM gave quite good samples after only around 10 iterations, SGD and SSM required much longer to converge. 
-More precisely, we saw that training SSM or SGD with an already moderately high learning rate
-of 0.01, needed around 200 iterations to produce good results, which of course increases more if we set a lower learning rate.
+More precisely, we saw that training with SSM or SGD, using an already moderately high learning rate
+of 0.01, needed around 200 iterations to produce good results, which of course even increases more if we set a lower learning rate.
 We provide a graph of samples at specific epochs on MNIST class 7 for all algorithms in Figure \ref{fig:mnist_epochs}.\\ 
 
 \begin{figure}[H]
@@ -231,19 +231,19 @@ We provide a graph of samples at specific epochs on MNIST class 7 for all algori
 Although increasing the learning rate further mostly worked for SGD, SSM saw vanishing or exploding gradients after some iterations and thus was
 not able to properly finish. Even applying gradient clipping did not really solve this. 
 
-Therefore the best way to train an EinsumNetwork using SSM we could find is to start with a relatively 
+Therefore, the best way to train an EinsumNetwork using SSM, we could find, is to start with a relatively 
 high learning rate of 0.2 or 0.1 and use learning rate decay to decrease it over time. Although
 this could further be specifically tuned for each different MNIST digit, we find that training for 
 20 iterations using an initial learning rate of 0.2 and decaying it with a factor of 0.5 every 5 epochs 
-and additionally using gradient clipping with a threshold of 1.0 was the most practical approach for all classes.
+while additionally using gradient clipping with a threshold of 1.0 was the most practical approach for all classes.
 This approach also improved the SGD results further.
 
-We trained with each algorithm for 20 iterations and used the described approach for SGD and SSM, on three different classes of MNIST. 
-Log Likelihood (NLL) and samples can be seen in the figures below.
+We trained with each algorithm for 20 iterations using the described learning rate schedule for SGD and SSM on three different classes of MNIST. 
+Log Likelihood (LL) and samples can be seen in the figures below.
 For results on FashionMNIST we refer to to Appendix \ref{sec:app_fashionmnist}. \\
 
 On a side note, this setup resulted in $204146$ learnable parameters in the EinsumNetwork. For comparison the most 
-complex 2D model we used with $100$ mixture components had $700$ learnable parameters. 
+complex 2D model we used, with $100$ mixture components, had $700$ learnable parameters. 
 
 \begin{figure}[H]
     \centering
@@ -323,9 +323,9 @@ complex 2D model we used with $100$ mixture components had $700$ learnable param
 
 Looking at these figures, specifically the LL, we see a quite similar picture as in the 2D Density Estimation emerge. 
 EM and SGD performed on par while SSM lagged a little behind. 
-Also the time needed for training reflected the 2D counterpart, though the gap increased even more, meaning EM and SGD roughly took the same amount of time, while SSM took approximately four times as long when comparing to the two other algorithms. 
+Also the time needed for training reflected the 2D counterpart, though the gap increased even more. While EM and SGD roughly took the same amount of time, SSM needed approximately four times longer to finish the 20 iterations. 
 
-When directly looking at the samples the results appear to be a bit different. While EM and SGD provided more or less the same samples, with SSM, they seemed to be the least "blurry" or most "clear", however with the caveat
+When directly looking at the samples the results appear to be a bit different. While EM and SGD provided more or less the same samples, with SSM, they seemed to be the least "blurry" or most "sharp", however with the caveat
 that sometimes noisy artifacts appear, best scene with class 8. We also found that when introducing 
 a weight decay in the optimizer, the number of these artifacts increase. Furthermore it often seemed that
 one particular type of the provided digit dominated, giving all samples a very similar look, best scene with class 7. \\
@@ -352,17 +352,19 @@ The masked out images as well as the reconstructions for the same MNIST digits a
 \end{figure}
 
 The results here are quite on par with the samples, not revealing too much 
-new information.
+new differences between the algorithms. All algorithms are able to fill out 
+the masked parts reasonably well. One thing of note is that is seems SSM is
+loosing some of the sharpness, that was present with the samples, in this scenario.
 
 \subsection{Multi Class}
 \label{sec:exp_mnist_multi}
 
 Since in real world scenarios it is seldom the case that we only want to model one specific 
-class of the data, we also trained the EinsumNetwork
+class of the data, we also trained an EinsumNetwork
 on multiple classes of MNIST at the same time.
 
-We again trained for 20 iterations with each algorithm, though we had to adjust the initial learning rate for SSM 
-to 0.1 in all scenarios, and the decay to 0.5 every 2 epochs when training on the entire MNIST dataset, meaning all classes.
+We again trained for $20$ iterations with each algorithm, though we had to adjust the initial learning rate for SSM 
+to 0.1 in all scenarios, and the decay to $0.5$ every \emph{$2$} epochs when training on all classes.
 Results, meaning samples and LL, for three different combinations can be seen below. \\
 
 \begin{figure}[H]
@@ -443,8 +445,8 @@ Results, meaning samples and LL, for three different combinations can be seen be
     \label{fig:mnist7}
 \end{figure}
 
-The NLLs, although being higher overall, relatively are also very similar to before. 
+The NLLs, although being higher overall, are relatively also very similar to before. 
 EM and SGD samples are quite similar again and SSM samples also appear to be the most "clear", 
 however this time the samples are clearly worse. While EM and SGD do not 
-produce perfect samples, different classes are distinguishable in most, this is not the case for SSM. 
+produce perfect samples, different classes are distinguishable in most cases. This is not the case for SSM. 
 Here the samples appear to be more of a superposition of the different classes, which is not what we want.
