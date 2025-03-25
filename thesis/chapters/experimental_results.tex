@@ -5,9 +5,9 @@
 
 \section{2D Density Estimation}
 
-To test the simple model from Section \ref{sec:simple_pc} with the discussed algorithms, so Expectation Maximization (EM), 
-Gradient Descent (GD), Score Matching (SM) and Sliced Score Matching (SSM) from Sections \ref{sec:gmm_em} to \ref{sec:gmm_ssm}, we used some 
-two dimensional data to perform density estimation. 
+To test the simple model from Section \ref{sec:simple_pc} (the GMM) with the discussed algorithms, i.e., Expectation Maximization (EM), 
+Gradient Descent (GD), Score Matching (SM) and Sliced Score Matching (SSM) from Sections \ref{sec:gmm_em} to \ref{sec:gmm_ssm}, we used there
+two dimensional dataset to perform density estimation. 
 
 Samples from the three datasets we used can be seen in Figure \ref{fig:2d_datasets}. \\
 
@@ -41,8 +41,8 @@ Samples from the three datasets we used can be seen in Figure \ref{fig:2d_datase
 \subsection{Main Experiment}
 \label{sec:best_results}
 
-Here the goal was to achieve the best possible results for each algorithm on each dataset. 
-For this we generated 20,000 data points for each dataset and split them evenly for training and validation. However before the training process can start, recall 
+Here the goal was to fit the GMM to achieve the best possible results for each algorithm on each dataset. 
+For this we generated 20,000 data points for each dataset and split them evenly (50/50) for training and validation. However before the training process can start, recall 
 that our model is governed by the learnable parameters $\boldsymbol \pi$ (mixture weights), $\boldsymbol \mu$ (means of components) and
 $\boldsymbol \Sigma$ (covariance matrices of components) that need to be initialized in some manner and the hyperparameter $K$ (mixture count) that needs to be chosen. 
 
@@ -64,7 +64,7 @@ the learning rate $\eta$ for all the gradient-based algorithms (GD, SM, SSM).
 To choose these parameters we fixed $K$ to one of the three chosen values and performed cross-validation by computing the validation set Log-Likelihood 
 of the models with all possible remaining hyperparameter combinations and choosing the combination with the highest Log-Likelihood.
 
-Results, more specifically Log-Likelihood, estimated densities and samples for all datasets and all values of $K$ can be seen in the following three pages.  
+Results, more specifically Log-Likelihoods (LLs) computed on the validation set, estimated densities and samples for all datasets and all values of $K$ can be seen in the following three pages.  
 
 \newpage
 \begin{figure}[H]
@@ -101,17 +101,17 @@ Results, more specifically Log-Likelihood, estimated densities and samples for a
 \end{figure}
 \newpage
 
-Looking at these results, specifically at the LL, we see that GD 
+Looking at these results, specifically at the Log-Likelihoods, we see that GD 
 usually performs the best, EM, depending on the scenario, in second place
 and SM and SSM, with very similar results, in last place.
 
 Analyzing the estimated densities is more difficult. Generally GD also 
-appears to produce the best results, meaning mostly noise free, evenly distributed densities. 
-EM behaves very similar when having a low K, but with both the halfmoons and spirals 
-having a higher K produces densities that are very dense in a few small points, producing samples
+appears to qualitatively produce the best results, meaning mostly noise free, evenly distributed densities. 
+EM behaves very similar when having a low $K$, but with both the halfmoons and spirals 
+having a higher $K$ produces densities that are very dense in a few small points, producing samples
 that appear empty in most places except these very high density regions. 
 SM and SSM in most cases produce the most noisy, unevenly distributed, densities. However 
-with the halfmoons dataset with K equaling 12 or 24 we see both SM and SSM producing 
+with the halfmoons dataset with $K$ equaling 12 or 24 we see both SM and SSM producing 
 very dense but still correct densities, that set them apart from the other algorithms.
 
 \subsection{Further Analysis}
@@ -135,7 +135,8 @@ with the standard deviation shaded.
 First, we see that on average SSM performs very similar to SM (usually a little worse), which 
 given that SSM is an approximation of SM, can be expected. Sometimes the stochastic nature of SSM can also 
 by sheer luck yield better results. Note that when increasing the number of slices, which were $1$ for all 
-experiments up until now, we saw that SSM increasingly gives a better approximation of SM.
+experiments up until now, we saw that SSM increasingly gives a better approximation of SM. 
+This is also expected since as we increase the number of slices to infinity, SSM converges to SM.
 
 Also clearly noticeable is that EM appears to learn the fastest and all the gradient-based algorithms
 behave quite similarly. This was similar for all other datasets and hyperparameter configurations as well. 

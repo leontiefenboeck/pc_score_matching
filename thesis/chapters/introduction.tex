@@ -2,10 +2,10 @@
 \label{cha:introduction}
 
 
-Probabilistic Modelling is an essential tool in machine learning that, through probability theory provides a 
+Probabilistic Modelling is an essential tool in machine learning that uses probability theory to provide a 
 principled mechanism for decision making under uncertainty. Recent progress, especially through models based on deep neural networks like Generative-Adversarial
-Networks (GANs) \cite{gan}, Variational Autoencoders (VAE) \cite{vae} and many others, have increased the expressive capability of probabilistic models considerably. 
-However in machine learning we are not only interested in generating realistic text or images, 
+Networks (GANs) \cite{gan}, Variational Autoencoders (VAEs) \cite{vae}, Denoising Diffusion Probabilistic Models (DDPMs) \cite{ddpm} and many others, have increased the expressiveness of probabilistic models considerably. 
+However, in machine learning we are not only interested in generating realistic text or images, 
 we also want to reason about data and perform various inference tasks. While probability theory conceptually provides 
 an optimal framework to carry out these tasks, it is often computationally very hard, even more so when dealing 
 with highly complex models as the ones mentioned above \cite{pc_intro}.
@@ -21,7 +21,7 @@ using Gradient Descent and Expectation Maximization as the optimization algorith
 provide theoretical robustness, but also have their limitations.
 
 A possible direction to explore in this regard is Score Matching (SM) \cite{sm}, an algorithm usually used 
-with Energy Based Models (EBMs), that works with the gradient (''scores'') of the log density instead 
+with Energy Based Models (EBMs), that works with the gradient of the log density (''scores'') instead 
 of the density function itself. There are also variants like Sliced Score Matching (SSM) \cite{ssm} that reduce
 the computational complexity of SM, making it more feasible for large-scale and high-dimensional data. 
 

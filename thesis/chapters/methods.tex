@@ -4,9 +4,9 @@
 \chapter{Methods}
 \label{cha:methods}
 
-In this thesis we try to address the concerns discussed in the introduction by training 
+As previously mentioned in the introduction, the main goal of this thesis is to train
 Probabilistic Circuits (PCs) through novel ways, specifically Score Matching (SM) and Sliced Score Matching (SSM).
-Then we compare results from these methods with results from conventional methods to train PCs, specifically Maximum Likelihood Estimation (MLE) using both Gradient Descent (GD) and Expectation Maximization (EM). \\
+To then compare results from these methods with results from conventional methods to train PCs, specifically Maximum Likelihood Estimation (MLE) using both Gradient Descent (GD) and Expectation Maximization (EM). \\
 
 \section{Creating a simple PC}
 \label{sec:simple_pc}
@@ -25,8 +25,7 @@ we take the $\log$ of Equation \ref{eq:gmm}:
 \end{equation}
 
 We also want to calculate a single weighted Gaussian component in log-space, so inside the sum, we take 
-the exponential of the logarithm, which is valid since it would cancel out. See Appendix \ref{eq:log_mvn} for the expression
-to calculate the log-density of a Gaussian. 
+the exponential of the logarithm, which is valid since it would cancel out. 
 
 \begin{align}
     \log p_{\boldsymbol{\theta}}(\vec x) & = \log \sum_{k=1}^K \exp \left( \log \left(\pi_k \mathcal{N}(\vec x|\boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k) \right) \right) \notag \\
@@ -54,11 +53,15 @@ Equation \ref{eq:gmm_log2} to arrive at a final numerically stable expression:
 \end{equation}
 
 We implemented this expression in python and used PyTorch's \cite{pytorch} \texttt{torch.nn.Parameter}
-for all learnable parameters in $\boldsymbol{\theta}$ to use PyTorch's optimization framework later.
+for all learnable parameters $\boldsymbol{\theta}$ to use PyTorch's optimization framework later.
 
-We also used \texttt{torch.distributions.MultivariateNormal} to compute the log density of a single 
-gaussian component $\mathcal{N}(\vec x_s|\boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k)$ and \texttt{torch.logsumexp}
-for the LSE operation.  
+We used \texttt{torch.distributions.MultivariateNormal} to compute the log density of a single 
+gaussian component, though we could have also used this expression:
+\begin{equation}
+    \log p(\mathbf{x}) = -\frac{n}{2} \log(2\pi) - \frac{1}{2} \log |\boldsymbol{\Sigma}| - \frac{1}{2} (\mathbf{x} - \boldsymbol{\mu})^T \boldsymbol{\Sigma}^{-1} (\mathbf{x} - \boldsymbol{\mu})
+\end{equation}
+
+We used \texttt{torch.logsumexp} for the LSE operation.  
 
 Note that for readability we will further refer to the whole density function of the GMM from Equation \ref{eq:gmm_log_final} as just 
 $\log p_{\boldsymbol{\theta}}(\vec x)$.
@@ -70,7 +73,7 @@ Now to train this GMM on some data $\mathcal{X} = \{\vec x_1, ..., \vec x_N\}$ i
 log Maximum Likelihood Estimation (MLE) objective from Equation \ref{eq:log_mle} in the Background chapter with the density function
 of the GMM from Equation \ref{eq:gmm_log_final}:
 \begin{align}
-    \max_{\substack{\boldsymbol{\theta}}} L(\boldsymbol{\theta}) = \sum_{i=1}^{N} \log p_{\boldsymbol{\theta}}(\vec x_i)
+    \max_{\substack{\boldsymbol{\theta}}} L(\boldsymbol{\theta}) := \sum_{i=1}^{N} \log p_{\boldsymbol{\theta}}(\vec x_i)
     \label{eq:gmm_objective}
 \end{align}
 
@@ -90,7 +93,7 @@ So to do this using GD, we instead \textbf{minimize} the \textbf{negative} log-l
 
 The main steps in applying GD to our GMM objective are: 
 
-1. \textbf{Computing the gradients} of the negative Log-Likelihood function $\text{NLL}(\boldsymbol{\theta})$ for each parameter in $\boldsymbol{\theta}$: 
+1. \textbf{Computing the gradients} of the negative Log-Likelihood function $\text{NLL}(\boldsymbol{\theta})$ for the parameters $\boldsymbol{\theta}$: 
 \[
     \nabla_{\boldsymbol{\theta}} \text{NLL}(\boldsymbol{\theta}) = \nabla_{\boldsymbol{\theta}} (- \sum_{i=1}^{N} \log p_{\boldsymbol{\theta}}(\vec x))
 \]
@@ -100,7 +103,7 @@ The main steps in applying GD to our GMM objective are:
     \boldsymbol{\theta}^{(t+1)} = \boldsymbol{\theta}^{(t)} - \eta \nabla_{\boldsymbol{\theta}} \text{NLL}(\boldsymbol{\theta})
 \]
 
-We repeat this for $T$ training iterations, also often called Epochs. \\
+We repeat this for $T$ training iterations, also often called epochs. \\
 Note that for the first iteration the parameters $\boldsymbol{\theta}$ have to be initialized in some manner, e.g. randomly. 
 
 \begin{algorithm}
@@ -175,7 +178,7 @@ We take the Exact Score Matching objective function from Equation \ref{eq:sm_obj
     \label{eq:sm_optimization_problem}
 \end{equation}
 
-Then we optimize this objective using Gradient Descent for $T$ Training Iteration and Learning Rate $\eta$.  
+Then we optimize this objective using Gradient Descent for $T$ training iteration and learning rate $\eta$.  
 
 \begin{algorithm}
     \caption{Score Matching}
@@ -199,7 +202,7 @@ Then we optimize this objective using Gradient Descent for $T$ Training Iteratio
 \subsubsection{Sliced Score Matching}
 \label{sec:gmm_ssm}
 
-To use Sliced instead of Exact Score Matching we can do everything in the same way as above, we only need to replace 
+To use the sliced version of Score Matching \ref{sec:ssm} we can do everything in the same way as above, we only need to replace 
 the objective function with the Sliced Score Matching objective from Equation \ref{eq:ssm_vr}, Section \ref{sec:ssm}. \\
 Note that for simplicity we only use one random vector $\vec v_i$ (one slice) for each data point. 
 
@@ -221,7 +224,7 @@ Note that for simplicity we only use one random vector $\vec v_i$ (one slice) fo
         \noindent\rule{\linewidth}{0.4pt} 
         \textbf{Procedure:} \textsc{SlicedScoreMatchingLoss}($\vec x$)
         \begin{algorithmic}[1]
-            \State $\vec v \gets \mathcal{N}(0, 1)$
+            \State $\vec v \gets \mathcal{N}(0, I)$
             \State $s_{\boldsymbol{\theta}}(\vec x) \gets \nabla_{\vec x} \log p_{\boldsymbol{\theta}}(\vec x)$
             \State $\mathcal{L}(\boldsymbol{\theta}) \gets \vec{v}^T \nabla_{\vec x_i} s_{\boldsymbol{\theta}}(\vec x_i) \vec{v} + \frac{1}{2} \norm{  s_{\boldsymbol{\theta}}(\vec x_i) }^2_2$
             \State \Return $\mathcal{L}(\boldsymbol{\theta})$
@@ -260,13 +263,13 @@ While the model proposed in Section \ref{sec:simple_pc} works well for relativel
 it doesn't perform very well with complex higher dimensional data, e.g. images. 
 
 So to get a wider variety of results we decided to also use a state-of-the-art framework for Probabilistic Circuits called 
-EinsumNetworks \cite{einsum} for modelling more complex higher dimensional datasets. 
+EinsumNetworks \cite{einsum} for modelling distributions over more complex higher dimensional datasets. 
 
 For more details on EinsumNetworks we refer to \cite{einsum}. In general, the same 
 principles as in our GMM apply but due to the deeper structure, the model is much more complex and can approximate more complex distributions. 
 It also has a lot more trainable parameters and thus training takes more time. 
 
 However implementing the training of an EinsumNetwork with our targeted algorithms is basically the same 
-as in the GMM case. Note that training with EM already comes with the framework, so we will leave this out. \\
+as in the GMM case. Note that training with EM already comes with the framework, so we will skip going into detail about this. \\
 For all other algorithms, we can apply them in the exact same way as described in Section \ref{sec:simple_pc} above, only needing 
 to switch out the calculation of $\log p_{\boldsymbol{\theta}}(\vec x)$ to the log-density function the EinsumNetwork framework provides. 

@@ -24,7 +24,7 @@ Again scalar quantities will be written as $x \in \mathbb{R}$, and vectors as bo
 At its core, \textbf{Machine Learning (ML)} aims to develop algorithms or programs that can learn from data to make informed decisions, predict future outcomes, or perform various inference tasks. 
 One powerful approach to this, especially when we are uncertain about particular quantities
 --which is the case for most real-world scenarios-- is \textbf{Probabilistic Modelling}.
-In Probabilistic Modelling, we use probabilities to represent this uncertainty and employ the rules of probability theory to carry out inference tasks \cite{pc_intro}.
+In Probabilistic Modelling, we use probabilities and probability densities to represent this uncertainty and employ the rules of probability theory to carry out inference tasks \cite{pc_intro}.
 
 \subsection{Probability Basics}
 \label{sec:prob_basics}
@@ -73,7 +73,7 @@ Specifically we \emph{maximize the likelihood} (the output of the model) of each
 expressed in Equation \ref{eq:mle}: 
 
 \begin{equation}
-    \max_{\theta} L(\theta) = \prod_{i=1}^{N} \log p_\theta(x_i)
+    \max_{\theta} L(\theta) = \max_{\theta} \prod_{i=1}^{N} p_\theta(x_i)
     \label{eq:mle}
 \end{equation}
 
@@ -83,11 +83,11 @@ It is noteworthy that instead of modelling $p_\theta(x)$, most of the time we wa
 So instead of maximizing the Likelihood we maximize the Log-Likelihood, turning Equation \ref{eq:mle} into the following:
 
 \begin{equation}
-    \max_{\theta} LL(\theta) = \log \prod_{i=1}^{N} p_\theta(x_i) = \sum_{i=1}^{N} \log p_\theta(x_i)
+    \max_{\theta} LL(\theta) = \max_{\theta} \log \prod_{i=1}^{N} p_\theta(x_i) = \max_{\theta} \sum_{i=1}^{N} \log p_\theta(x_i)
     \label{eq:log_mle}
 \end{equation}
 
-Here $L(\theta)$ is now referred to as the \emph{Log-Likelihood Function}. 
+Here $LL(\theta)$ is now referred to as the \emph{Log-Likelihood Function}. 
 
 After learning a model using MLE we can again perform inference using the rules of probability. 
 
@@ -137,8 +137,15 @@ The probability density function of a multivariate GMM is given by Equation \ref
 \end{equation}
 
 In this equation, $K$ is the number of Gaussian components in the mixture, and $\pi_k$ is the mixture weight associated with the $k$-th component, where $\sum_{k=1}^K \pi_k = 1$ and $\pi_k \geq 0$, ensuring that the model 
-outputs a normalized density. $\mathcal{N}(\vec x|\boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k)$ represents one single Gaussian component with mean $\boldsymbol{\mu}_k$ and 
-covariance matrix $\boldsymbol{\Sigma}_k$. This component is calculated using the well known multivariate gaussian density function, see Appendix Equation \ref{eq:mvn}. 
+outputs a normalized density. 
+
+$\mathcal{N}(\vec x|\boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k)$ represents one single Gaussian component with mean $\boldsymbol{\mu}_k$ and 
+covariance matrix $\boldsymbol{\Sigma}_k$. This component is calculated using the well known multivariate gaussian density function:
+
+\begin{equation}
+    p(\mathbf{x}) = \frac{1}{\sqrt{(2\pi)^n |\boldsymbol{\Sigma}|}} \exp\left(-\frac{1}{2} (\mathbf{x} - \boldsymbol{\mu})^T \boldsymbol{\Sigma}^{-1} (\mathbf{x} - \boldsymbol{\mu})\right)
+\end{equation}. 
+
 Furthermore $\boldsymbol{\theta}$ refers to the parameter vector $\boldsymbol{\theta} = \{\boldsymbol{\pi}, \boldsymbol{\mu}, \boldsymbol{\Sigma}\}$, where $\boldsymbol{\pi} = \{ \pi_1, ... , \pi_K \}, \ \boldsymbol{\mu} = \{ \boldsymbol{\mu}_1, ... , \boldsymbol{\mu}_K \}, \ \boldsymbol{\Sigma} = \{ \boldsymbol{\Sigma}_1, ... , \boldsymbol{\Sigma}_K \}$.
 
 We call $\boldsymbol{\theta}$ the learnable parameters and $K$ the hyperparameter of the model.
@@ -151,18 +158,16 @@ highly expressive at the same time. In general, this is achieved by only introdu
 for a PC to be valid it has to adhere to certain structural properties, but more on that later. \\
 
 Prominent members of the PC class include Cutset Networks \cite{cutset}, Probabilistic
-Sentential Decision Diagrams (PSDDs) \cite{psdd} and others, but we will only be focusing on Sum Product Networks (SPNs) \cite{spn}, which to our 
-knowledge has seen the widest adoption and a lot of the times actually a SPN is meant when talking about PCs. However continuing on, we will only talk about 
-PCs but often you could use PC and SPN interchangeably.  
+Sentential Decision Diagrams (PSDDs) \cite{psdd} and others. In this work, we focus on a specific type of PC, which is often also called a Sum-Product Network (SPN) \cite{spn}.
 
 In principle, a PC is a structured neural network that consists of leaf nodes, sum nodes and product 
 nodes. A PC then recursively computes weighted mixtures (sum nodes) and factorizations (product nodes) of simple input distributions (leaf nodes). 
-These inputs can basically be any probability distribution like Gaussians, Binomials, Categoricals and so on,
-however most of the time we will talk about Gaussians \cite{pc_intro}. Note that if the leaf distributions have normalized density functions and the weights of the PC are
-normalized correctly then the whole PC also models a normalized density \cite{pc_intro}.
+These inputs can be any probability distribution like Gaussians, Binomials, Categoricals etc.,
+however most of the time we will talk about Gaussians leafs \cite{pc_intro}. Note that if the leaf distributions are normalized density functions and the weights of the sum nodes of the PC are
+normalized correctly, then the whole PC also models a normalized density \cite{pc_intro}.
 
-Considering this, one could notice that the simplest form of a PC is just a basic
-Gaussian Mixture Model, where one sum node mixes two leaf nodes. In fact, PCs overall can fundamentally be seen as \emph{deep} Gaussian Mixture Models. 
+Considering this, one could notice that a simple instantiation of a PC is the aforementioned
+Gaussian Mixture Model, where one sum node mixes two leaf nodes. Intuitively, PCs overall can fundamentally be seen as \emph{deep} (Gaussian) Mixture Models. 
 This simple PC can be graphically depicted as in Figure~\ref{fig:spn_gmm}, where the two nodes at the bottom represent input distributions over the RV $X_1$ and the top node
 represents the mixture.
 
@@ -242,36 +247,35 @@ In simple terms this basically means that sum nodes are only allowed to have inp
 only allowed to have inputs over different variables. The two depicted PCs are smooth and decomposable.
 
 There are more structural properties that a PC can fulfill, however these two already guarantee tractable computation of the important
-marginal (MAR) and conditional (CON) queries \cite{pc_intro}, which is already sufficient for many scenarios. 
+marginal (MAR) and conditional (CON) queries \cite{pc_intro}, that we discussed in Section \ref{sec:prob_basics}. This is already sufficient for many scenarios. 
 Generally the more structure a PC has, which means the more structural properties it must fulfill, the more inference tasks it can compute 
 tractably. 
 
 We refer the reader to \cite{pc_intro} for why these properties guarantee tractable inference 
 and further discussion on other properties.
 
-Using a PC in a real-world scenario then would entail first deciding on a structure, so which properties and leaf 
-distributions to use and how the nodes should be arranged in the graph, and then doing a Maximum Likelihood 
-Estimation, where $\theta$ is composed of the weights of the sum nodes and the parameters of the leaf distributions (e.g. means and variances for a Gaussian). 
+Using a PC in a real-world scenario then would entail first deciding on a structure (i.e., which properties and leaf 
+distributions to use and how the nodes should be arranged in the graph) and then doing a Maximum Likelihood 
+Estimation, where $\theta$ is composed of the weights of the sum nodes and the parameters of the leaf distributions (e.g., means and variances for a Gaussian). 
 This optimization is usually done via Gradient Descent or Expectation-Maximization (EM). More details will follow in Section \ref{sec:simple_pc}.
 
 \section{Score Matching}
 \label{sec:sm}
 
-Score Matching \cite{sm} is a concept that is normally used when dealing with unnormalized models like Energy Based Models (EBMs). The term 
-''energy'' typically just refers to an unnormalized log-density $\log p(x)$. 
-Learning these models through Maximum Likelihood Estimation can be difficult because of the computationally infeasible normalization 
-constant, usually called $Z_\theta$ \cite{sm}. Recall that GMMs and PCs can represent normalized densities, nullifying this issue. \\
+Score Matching \cite{sm} is a training technique that is typically used when dealing with unnormalized models like Energy Based Models (EBMs). 
+In this context the term ``energy'' refers to the negative of an unnormalized log-density. 
 
 The relation between a parameterized density $p_\theta$ and the energy $E_\theta$ is given by
 \[
     p_\theta(x) = \frac{e^{-E_\theta(x)}}{Z_\theta}.
 \]
 
-Calculating the normalization constant would mean computing the integral 
+Calculating the normalization constant ${Z_\theta}$ would mean computing the integral 
 \[
     Z_\theta = \int e^{-E_\theta(x)} \, dx, 
 \]
-which is the source of the computational infeasibility. \\
+which is computationally infeasible --especially with high dimensional datasets-- since the complexity of this integral grows exponentially with the dimensionality of $x$. Thus training EBMs with Maximum Likelihood Estimation is typically not possible.
+(Recall that PCs can represent normalized densities, nullifying this issue.) \\
 
 Score Matching proposes a workaround by working with the gradient of the log-density $\nabla_x \log p_\theta(x)$, 
 instead of $p_\theta(x)$, since calculating $\nabla_x \log p_\theta(x)$ removes $Z_\theta$ from the computation:
@@ -311,14 +315,14 @@ Notice that we also removed the constant $C$ since we seek $\theta^{SM} = \arg\m
 \section{Sliced Score Matching}
 \label{sec:ssm}
 
-While Score Matching get's rid of the normalization constant $Z_\theta$, it introduces another term that can become hard
+While Score Matching get's rid of the normalization constant $Z_\theta$, it introduces another term that can be hard
 to compute. To calculate the trace of the Hessian in Equation \ref{eq:sm_objective} one derivation of $s_\theta(x)$ needs to be computed for each diagonal element of the Hessian.
 This basically means that the number of derivations needed equals the dimension of the data. 
-While this is fine for low dimensional data it quickly becomes infeasible when
-learning higher dimensional data, for instance images.  
+While this is fine for low dimensional data, it quickly becomes infeasible when
+using higher dimensional data, for instance images.  
 
 In Sliced Score Matching (SSM) \cite{ssm} the basic idea is to project the high dimensional data onto a random direction $\vec v$ to reduce 
-the dimensionality and solve a lower dimensional problem. The number of random directions aka. slices can range from $1$ upward, but 
+the dimensionality and solve a lower dimensional problem. The number of random directions (also called slices) can range from $1$ upward, but 
 most of the time $1$ slice should suffice. 
 
 Applying this idea results in the following objective replacing Fisher Divergence from Equation \ref{eq:fisher} \cite{ssm}: 
