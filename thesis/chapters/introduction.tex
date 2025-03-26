@@ -10,12 +10,9 @@ we also want to reason about data and perform various inference tasks. While pro
 an optimal framework to carry out these tasks, it is often computationally very hard, even more so when dealing 
 with highly complex models as the ones mentioned above \cite{pc_intro}.
 
-A promising research field that addresses this issue are Probabilistic Circuits (PCs). Probabilistic 
-Circuit is an umbrella term for probabilistic models that, by only introducing 
+A promising research field that addresses this issue are Probabilistic Circuits (PCs). PC is an umbrella term for probabilistic models that, by only introducing 
 complexity in a structured manner, are expressive while at the same time 
-being able to compute many inference tasks exactly and efficiently \cite{pc_intro}.
-
-While PCs have demonstrated success in different scenarios, the methods of training them remain 
+being able to compute many inference tasks exactly and efficiently \cite{pc_intro}. While PCs have demonstrated success in different scenarios, the methods of training them remain 
 an active research topic. Conventionally PCs are trained through Maximum Likelihood Estimation (MLE), often 
 using Gradient Descent and Expectation Maximization as the optimization algorithms. These well-known methods
 provide theoretical robustness, but also have their limitations.
@@ -23,9 +20,11 @@ provide theoretical robustness, but also have their limitations.
 A possible direction to explore in this regard is Score Matching (SM) \cite{sm}, an algorithm usually used 
 with Energy Based Models (EBMs), that works with the gradient of the log density (''scores'') instead 
 of the density function itself. There are also variants like Sliced Score Matching (SSM) \cite{ssm} that reduce
-the computational complexity of SM, making it more feasible for large-scale and high-dimensional data. 
+the computational complexity of SM, making it more feasible for high-dimensional data. 
 
 In this thesis we investigate the potential of using Score Matching objectives for training Probabilistic Circuits,
-by conducting experiments and comparing the results to the traditional MLE-based approaches. 
-We aim to asses the effectiveness of these methods across different types of PCs and datasets, starting with 
-a very simple PC for 2D density estimation and ending with a state-of-the-art framework, to do generative image modelling. 
+by conducting experiments, and comparing the results --Log-Likelihoods and generated samples-- to the traditional MLE-based approaches. 
+We aim to do this across different types of PCs and datasets, starting with 
+a very simple PC for 2D density estimation, and ending with a state-of-the-art framework to do generative image modelling.
+We find that, while Score Matching does not outperform MLE in terms of Log-Likelihood, 
+it can provide very interesting and high-quality samples when doing generative image modelling.

@@ -73,7 +73,7 @@ Now to train this GMM on some data $\mathcal{X} = \{\vec x_1, ..., \vec x_N\}$ i
 log Maximum Likelihood Estimation (MLE) objective from Equation \ref{eq:log_mle} in the Background chapter with the density function
 of the GMM from Equation \ref{eq:gmm_log_final}:
 \begin{align}
-    \max_{\substack{\boldsymbol{\theta}}} L(\boldsymbol{\theta}) := \sum_{i=1}^{N} \log p_{\boldsymbol{\theta}}(\vec x_i)
+    \max_{\substack{\boldsymbol{\theta}}} \{ L(\boldsymbol{\theta}) := \sum_{i=1}^{N} \log p_{\boldsymbol{\theta}}(\vec x_i) \}
     \label{eq:gmm_objective}
 \end{align}
 
@@ -174,7 +174,7 @@ to switch the objective function.
 We take the Exact Score Matching objective function from Equation \ref{eq:sm_objective}, Section \ref{sec:sm} and formulate the optimization problem:
 
 \begin{equation}
-    \min_{\substack{\boldsymbol{\theta}}} \hat{\mathcal{L}}(\boldsymbol{\theta}) = \frac{1}{N} \sum_{i=1}^{N} \left(\text{tr} \left( \nabla_{\vec x_i} s_{\boldsymbol{\theta}}(\vec x_i) \right) + \frac{1}{2} \left\| s_{\boldsymbol{\theta}}(\vec x_i) \right\|^2 \right)
+    \min_{\substack{\boldsymbol{\theta}}} \{ \hat{\mathcal{L}}(\boldsymbol{\theta}) := \frac{1}{N} \sum_{i=1}^{N} \left(\text{tr} \left( \nabla_{\vec x_i} s_{\boldsymbol{\theta}}(\vec x_i) \right) + \frac{1}{2} \left\| s_{\boldsymbol{\theta}}(\vec x_i) \right\|^2 \right) \}
     \label{eq:sm_optimization_problem}
 \end{equation}
 
@@ -207,7 +207,7 @@ the objective function with the Sliced Score Matching objective from Equation \r
 Note that for simplicity we only use one random vector $\vec v_i$ (one slice) for each data point. 
 
 \begin{equation}
-    \min_{\substack{\boldsymbol{\theta}}} \mathcal{L}(\boldsymbol{\theta}) = \frac{1}{N} \sum_{i=1}^{N} \left( \vec{v}_i^T \nabla_{\vec x_i} s_{\boldsymbol{\theta}}(\vec x_i) \vec{v}_i + \frac{1}{2} \norm{  s_{\boldsymbol{\theta}}(\vec x_i) }^2_2 \right)
+    \min_{\substack{\boldsymbol{\theta}}} \{ \hat{\mathcal{L}(\boldsymbol{\theta})} := \frac{1}{N} \sum_{i=1}^{N} \left( \vec{v}_i^T \nabla_{\vec x_i} s_{\boldsymbol{\theta}}(\vec x_i) \vec{v}_i + \frac{1}{2} \norm{  s_{\boldsymbol{\theta}}(\vec x_i) }^2_2 \right) \}
     \label{eq:ssm_optimization_problem}
 \end{equation}
 

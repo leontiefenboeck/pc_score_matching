@@ -73,7 +73,7 @@ Specifically we \emph{maximize the likelihood} (the output of the model) of each
 expressed in Equation \ref{eq:mle}: 
 
 \begin{equation}
-    \max_{\theta} L(\theta) = \max_{\theta} \prod_{i=1}^{N} p_\theta(x_i)
+    \max_{\theta} \{ L(\theta) = \prod_{i=1}^{N} p_\theta(x_i) \}
     \label{eq:mle}
 \end{equation}
 
@@ -83,7 +83,7 @@ It is noteworthy that instead of modelling $p_\theta(x)$, most of the time we wa
 So instead of maximizing the Likelihood we maximize the Log-Likelihood, turning Equation \ref{eq:mle} into the following:
 
 \begin{equation}
-    \max_{\theta} LL(\theta) = \max_{\theta} \log \prod_{i=1}^{N} p_\theta(x_i) = \max_{\theta} \sum_{i=1}^{N} \log p_\theta(x_i)
+    \max_{\theta} \{ LL(\theta) = \log \prod_{i=1}^{N} p_\theta(x_i) = \sum_{i=1}^{N} \log p_\theta(x_i) \}
     \label{eq:log_mle}
 \end{equation}
 
