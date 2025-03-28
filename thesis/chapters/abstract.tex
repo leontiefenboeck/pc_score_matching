@@ -3,11 +3,16 @@
 Probabilistic Circuits (PCs) are a class of tractable 
 probabilistic models that have seen much interest in recent years. 
 By only introducing complexity in a structured manner, they are expressive 
-and yet able to compute many inference tasks exactly and efficiently at the same time.
-While PCs have demonstrated success in different scenarios, the methods of training them remain an active research topic.
-In this thesis, we empirically investigate different methods to train PCs. We focus 
-on Score Matching objectives, which are usually used in Energy Based Models (EBMs), 
-and work with the gradient (”scores”) of the log density function instead of the density function itself.
-We compare the performance of Exact as well as Sliced Score Matching with the
-current standard to train PCs, namely Maximum Likelihood Estimation (MLE)
-using either Stochastic Gradient Descent (SGD) or Expectation Maximization (EM).
+and yet able to compute many inference tasks exactly and efficiently.
+However, training PCs with a Maximum-Likelihood objective empirically leads to significantly
+worse performance when compared to state-of-the-art generative models. 
+We hypothesize that the reason for this is that the optimization procedure gets stuck in sub-par 
+local minima. In this work, we investigate if a different choice of loss function 
+can alleviate this problem. In particular, we compare Maximum-Likelihood training 
+with Score Matching (SM), a method which is usually used in Energy Based Models (EBMs), 
+and works with the gradient of the log density function (”scores”) instead of the density function itself.
+We experimentally evaluate the performance of SM and Sliced Score Matching --a variant that makes SM
+scalable to high-dimensional data-- on a set of both low and high-dimensional density 
+estimation tasks. We find that, while SM does not outperform Maximum-Likelihood training in all 
+measures, it provides much sharper samples in our image generation tasks.
+The code to reproduce our experiments is publicly available at \url{https://github.com/leontiefenboeck/pc\_score\_matching.}
